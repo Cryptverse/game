@@ -187,7 +187,7 @@ setInterval(() => {
                 const spawner = state.mapData.mobSpawners.find(spawner => {
                     spawner.id == info.tile?.spawn;
                 });
-                if (spawner.availableMobs.length !== 0) {
+                if (spawner?.availableMobs.length !== 0) {
                     const spawn = spawner.availableMobs[spawner.availableMobs.length * Math.random() | 0]
                     cfg = mobConfigs[spawn[0]]
                     if (spawn[1] !== true) {
