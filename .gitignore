@@ -4,4 +4,4 @@ build
 .env
 run_bun.sh
 bun.lock
-player_builds/index.js
+player_builds
