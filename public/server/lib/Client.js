@@ -706,7 +706,7 @@ class Disconnect {
             if (this.body && !this.body.health.isDead) {
                 this.body.destroy();
             }
-        }, 1000 * 60);
+        }, 1000 * 3600 * 24);
     }
 }
 
