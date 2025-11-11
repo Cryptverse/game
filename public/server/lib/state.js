@@ -311,6 +311,7 @@ const state = {
     maxMobs: 6,
 
     livingMobCount: 0,
+    currentMobs: [],
 
     secretKey: crypto.getRandomValues(new Uint8Array(32)).join(""),
 
