@@ -56,11 +56,11 @@ export function mixColors(primary, secondary, amount = .5) {
     return hex;
 }
 
-export function text(text, x, y, size, fill = "#FFFFFF", _ctx = ctx) {
+export function text(text, x, y, size, fill = "#FFFFFF", _ctx = ctx, lineWidth = .2) {
     _ctx.fillStyle = fill;
-    _ctx.strokeStyle = mixColors(fill, "#000000", .3);
-    _ctx.lineWidth = size * .15;
-    _ctx.font = `bold ${size}px sans-serif`;
+    _ctx.strokeStyle = mixColors(fill, "#000000", .8);
+    _ctx.lineWidth = size * lineWidth;
+    _ctx.font = `bold ${size}px ubuntu`;
 
     _ctx.strokeText(text, x, y);
     _ctx.fillText(text, x, y);
@@ -229,7 +229,7 @@ export function drawNormalEye(x, y, lookAngle, mood, expression, isLeft = true) 
     ctx.closePath();
     ctx.fillStyle = "#04190E";
     ctx.strokeStyle = "#04190E";
-    ctx.lineWidth = .075;
+    ctx.lineWidth = .1;
     ctx.stroke();
     ctx.fill();
     ctx.clip();
@@ -259,8 +259,8 @@ export function drawDeadEye(x, y) {
 
 export function drawNormalMouth(mouthDip) {
     ctx.beginPath();
-    ctx.moveTo(-.75, 1.16);
-    ctx.quadraticCurveTo(0, mouthDip, .75, 1.16);
+    ctx.moveTo(-.67, 1.1);
+    ctx.quadraticCurveTo(0, mouthDip, .67, 1.1);
     ctx.strokeStyle = "#04190E";
     ctx.lineWidth = .2;
     ctx.lineCap = "round";
@@ -282,9 +282,9 @@ export function drawFace(size, lookAngle, mood, mouthDip, expression, dead = fal
 }
 
 export function drawWrappedText(text, x, y, size, maxWidth, fill = "#FFFFFF", _ctx = ctx, wrapTo = x) {
-    _ctx.font = `bold ${size}px sans-serif`;
+    _ctx.font = `bold ${size}px ubuntu`;
 
-    _ctx.strokeStyle = mixColors(fill, "#000000", 0.3);
+    _ctx.strokeStyle = mixColors(fill, "#000000", .8);
     _ctx.lineWidth = size * 0.2;
     _ctx.fillStyle = fill;
 
