@@ -4,7 +4,7 @@ import { DEFAULT_PETAL_COUNT, mobConfigs, PetalConfig, petalConfigs, tiers } fro
 import { AIPlayer, Mob, Player } from "./lib/Entity.js";
 import Router from "./lib/Router.js";
 import { stringToU8, u8ToString, u8ToU16 } from "../lib/lobbyProtocol.js";
-import { applyArticle, isHalloween } from "../lib/util.js";
+import { applyArticle, getWaveMobRarity, isHalloween } from "../lib/util.js";
 
 function createWave(n) {
     const output = [];
@@ -126,7 +126,7 @@ setInterval(() => {
         case GAMEMODES.FFA:
         case GAMEMODES.TDM: {
             const oldMapSize = state.width;
-            const newMapSize = 32 * 32 + 32 * 8 * (state.clients.size - 1);
+            const newMapSize = 1024 + 32 * 8 * (state.clients.size - 1);
 
             if (oldMapSize !== newMapSize) {
                 state.width = state.height = newMapSize;
@@ -136,10 +136,10 @@ setInterval(() => {
             }
         } break;
         case GAMEMODES.WAVES: {
-            if (state.isWaves && state.livingMobCount === 0) {
+            if (state.isWaves && state.livingMobCount <= 0) {
                 state.currentWave++;
                 state.maxMobs = Math.min(64, 6 + 2 * state.currentWave);
-                state.width = state.height = Math.min(32 * 32 + 32 * 2 * state.currentWave, Math.pow(128, 2));
+                state.width = state.height = Math.min(1024 + 48 * 2 * state.currentWave, Math.pow(128, 2));
 
                 state.clients.forEach(client => client.sendRoom());
                 const mobIndexes = createWave(state.maxMobs);
@@ -148,14 +148,15 @@ setInterval(() => {
                     if (mobIndexes[i] === -1) {
                         new AIPlayer(
                             state.random(),
-                            Math.max(0, Math.min(Math.min(11, Math.floor(Math.pow(state.currentWave, .475))) - (Math.random() * 3 | 0), 10)),
+                            Math.max(0, getWaveMobRarity(state.currentWave, 3.81 * Math.pow(1.012, state.currentWave), tiers.length - 1)),
                             state.currentWave
                         );
                         continue;
                     }
 
                     const mob = new Mob(state.random());
-                    mob.define(mobConfigs[mobIndexes[i]], Math.max(0, Math.min(Math.min(11, Math.floor(Math.pow(state.currentWave, .475))) - (Math.random() * 3 | 0), 10)));
+                    mob.define(mobConfigs[mobIndexes[i]], getWaveMobRarity(state.currentWave, 3.81 * Math.pow(1.012, state.currentWave), tiers.length - 1));
+                    state.currentMobs.push(mob);
                 }
             }
         } break;
@@ -163,8 +164,8 @@ setInterval(() => {
             const oldW = state.width;
             const oldH = state.height;
 
-            state.width = 32 * 32 * 16;
-            state.height = 32 * 32 * 4;
+            state.width = 1024 * 16;
+            state.height = 1024 * 4;
             state.maxMobs = 10 + 2 * (state.clients.size - 1);
 
             if (oldW !== state.width || oldH !== state.height) {
@@ -238,7 +239,7 @@ setInterval(() => {
 }, 256);
 
 // World update loop
-setInterval(() => state.clients.forEach(c => c.worldUpdate()), 1000 / 20);
+setInterval(() => state.clients.forEach(c => c.worldUpdate()), 1000 / 25);
 
 // Router server through worker through socket
 state.router = new Router();
@@ -586,6 +587,9 @@ class ModdingAPI {
                         y: mob.y
                     }
                 });
+                if (state.isWaves) {
+                    state.currentMobs.push(mob)
+                }
             } break;
             case "setRoomInfo":
                 if (args.length < 1 || args.length > 5) {
