@@ -370,7 +370,6 @@ function processInputs() {
         newFlags |= 0x80;
         net.state.socket?.talk(SERVER_BOUND.INPUTS, newFlags);
         lastFlag = newFlags;
-        return;
     }
 
     if (keyMap.has("w") || keyMap.has("arrowup")) {
@@ -398,7 +397,7 @@ function processInputs() {
     }
 
     if (newFlags !== lastFlag || mouseX !== mouse.x || mouseY !== mouse.y) {
-        if (options.mouseMovement) {
+        if (options.mouseMovement && !isMobile) {
             newFlags |= 0x40;
             mouseX = mouse.x;
             mouseY = mouse.y;
