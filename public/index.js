@@ -231,7 +231,7 @@ updateButtons();
 window.addEventListener("resize", updateButtons);
 
 function drawButtons(ctx) {
-    ctx.globalAlpha = 0.2;
+    ctx.globalAlpha = .2;
     ctx.beginPath();
     ctx.arc(joystick.baseX, joystick.baseY, joystick.radius, 0, Math.PI * 2);
     ctx.fillStyle = "#000000";
@@ -242,22 +242,22 @@ function drawButtons(ctx) {
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    ctx.globalAlpha = attackButton.on ? 0.5 : 0.2;
+    ctx.globalAlpha = attackButton.on ? .5 : .2;
     ctx.beginPath();
     ctx.arc(attackButton.x, attackButton.y, attackButton.radius, 0, Math.PI * 2);
     ctx.fillStyle = "#000000";
     ctx.fill();
     ctx.globalAlpha = .7;
-    text("A", attackButton.x, attackButton.y, 100, colors.white, ctx, 0.00001);
+    text("A", attackButton.x, attackButton.y, 100, colors.white, ctx, .00001);
     ctx.globalAlpha = 1;
 
-    ctx.globalAlpha = defendButton.on ? 0.5 : 0.2;
+    ctx.globalAlpha = defendButton.on ? .5 : .2;
     ctx.beginPath();
     ctx.arc(defendButton.x, defendButton.y, defendButton.radius, 0, Math.PI * 2);
     ctx.fillStyle = "#000000";
     ctx.fill();
     ctx.globalAlpha = .7;
-    text("B", defendButton.x, defendButton.y, 100, colors.white, ctx, 0.00001);
+    text("B", defendButton.x, defendButton.y, 100, colors.white, ctx, .00001);
     ctx.globalAlpha = 1;
 }
 
@@ -737,7 +737,7 @@ function draw() {
 
         net.state.dyingPetals.forEach((data, id) => {
             const entity = data.petal;
-            data.progress += 0.2;
+            data.progress += .2;
             if (data.progress >= 1) {
                 net.state.dyingPetals.delete(id);
                 return;
@@ -761,7 +761,7 @@ function draw() {
         
         net.state.dyingMobs.forEach((data, id) => {
             const entity = data.mob;
-            data.progress += 0.2;
+            data.progress += .2;
             if (data.progress >= 1) {
                 net.state.dyingMobs.delete(id);
                 return;
@@ -791,7 +791,7 @@ function draw() {
     
         net.state.dyingPlayers.forEach((data, id) => {
             const entity = data.player;
-            data.progress += 0.2;
+            data.progress += .2;
             if (data.progress >= 1) {
                 net.state.dyingPlayers.delete(id);
                 return;
@@ -830,7 +830,7 @@ function draw() {
         entity.interpolate();
         entity.size2 ??= entity.index === 24 || entity.index === 64 ? entity.size / 1.4 : entity.size;
         if (entity.index === 24 || entity.index === 64) {
-            entity.size2 += (entity.size - entity.size2) * 0.25;
+            entity.size2 += (entity.size - entity.size2) * .25;
         }
 
         let drawX = entity.x * scale - cameraX + halfWidth,
@@ -1591,7 +1591,7 @@ function draw() {
 
                     if (entity.count > 1) {
                         ctx.save();
-                        text(`x${entity.count}`, x + boxSize - 6, y + 4, boxSize * 0.3, colors.white);
+                        text(`x${entity.count}`, x + boxSize - 6, y + 4, boxSize * .3, colors.white);
                         ctx.restore();
                     }
                 });
@@ -1605,9 +1605,9 @@ function draw() {
         
         if (net.state.petalHover !== null) {
             net.state.lastPetalHover = [...net.state.petalHover];
-            net.state.petalHoverAlpha += 0.25;
+            net.state.petalHoverAlpha += .25;
         } else {
-            net.state.petalHoverAlpha -= 0.25;
+            net.state.petalHoverAlpha -= .25;
         }
     
         net.state.petalHoverAlpha = Math.max(0, Math.min(1, net.state.petalHoverAlpha));
@@ -1643,9 +1643,9 @@ function draw() {
         
         if (net.state.mobHover !== null) {
             net.state.lastMobHover = [...net.state.mobHover];
-            net.state.mobHoverAlpha += 0.25;
+            net.state.mobHoverAlpha += .25;
         } else {
-            net.state.mobHoverAlpha -= 0.25;
+            net.state.mobHoverAlpha -= .25;
         }
     
         net.state.mobHoverAlpha = Math.max(0, Math.min(1, net.state.mobHoverAlpha));
@@ -1710,7 +1710,9 @@ function draw() {
 
     ctx.restore();
 
-    drawButtons(ctx)
+    if (isMobile) {
+        drawButtons(ctx)
+    }
 
     clientDebug.frames++;
     clientDebug.totalTime += performance.now() - start;
