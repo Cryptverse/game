@@ -1,6 +1,7 @@
 import { canvas, gameScale, renderTerrain, renderTerrainForMap, SpookyOverlay } from "./canvas.js";
 import { Reader, Writer, SERVER_BOUND, CLIENT_BOUND, ENTITY_FLAGS, ENTITY_MODIFIER_FLAGS, decodeEverything, Drawing, DEV_CHEAT_IDS, PetalConfig, MobConfig, PetalTier, getTerrain, terrains, BIOME_TYPES, loadTerrains } from "./protocol.js";
 import { StarfishData } from "./renders.js";
+import { joystick } from ".././index.js";
 import * as util from "./util.js";
 
 function getBrowserInfo() {
@@ -1072,6 +1073,7 @@ export class ClientSocket extends WebSocket {
 
                     if (flags === ENTITY_FLAGS.NEW) {
                         petal.index = reader.getUint8();
+                        petal.rarity = reader.getUint8();
                         petal.realX = reader.getFloat32();
                         petal.realY = reader.getFloat32();
                         petal.realSize = reader.getFloat32();
@@ -1191,7 +1193,7 @@ export class ClientSocket extends WebSocket {
                     if (flags & ENTITY_FLAGS.ROPE_BODIES) {
                         const count = reader.getUint8();
 
-                        if (count !== mob.extraData.length) {
+                        if (count !== mob.extraData?.length) {
                             mob.extraData = [];
 
                             for (let i = 0; i < count; i++) {
@@ -1219,7 +1221,8 @@ export class ClientSocket extends WebSocket {
                         y: reader.getFloat32(),
                         size: reader.getFloat32(),
                         index: reader.getUint8(),
-                        rarity: reader.getUint8()
+                        rarity: reader.getUint8(),
+                        duration: reader.getUint16()
                     });
                 }
 
@@ -1302,13 +1305,27 @@ export class ClientSocket extends WebSocket {
                 }
 
                 if (reader.getUint8() === 1) {
+                    const wave = reader.getUint16();
+                    const livingMobs = reader.getUint16();
+                    const maxMobs = reader.getUint16();
+                
+                    const mobCount = reader.getUint16();
+                    const currentMobs = [];
+                
+                    for (let i = 0; i < mobCount; i++) {
+                        const index = reader.getUint8();
+                        const rarity = reader.getUint8();
+                        currentMobs.push({index, rarity});
+                    }
+                
                     state.waveInfo = {
-                        wave: reader.getUint16(),
-                        livingMobs: reader.getUint16(),
-                        maxMobs: reader.getUint16()
+                        wave,
+                        livingMobs,
+                        maxMobs,
+                        currentMobs
                     };
                 } else {
-                    state.waveInfo = null
+                    state.waveInfo = null;
                 }
 
                 state.level = reader.getUint16();
@@ -1428,6 +1445,10 @@ export class ClientSocket extends WebSocket {
 
                     writer.setFloat32(angle);
                     writer.setFloat32(dist / canvas.width / 2);
+                }
+                if (data === 0x80) {
+                    writer.setFloat32(joystick.angle);
+                    writer.setFloat32(joystick.distance);
                 }
                 break;
             case SERVER_BOUND.CHANGE_LOADOUT: {
