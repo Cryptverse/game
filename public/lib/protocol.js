@@ -1028,7 +1028,6 @@ export class Drawing {
                 if (arg === "") return undefined;
                 if (arg[0] === "#") return arg;
     
-                // keep strings like "date" or "date_0.01" as-is
                 if (typeof arg === "string" && (arg === "date" || arg.startsWith("date_"))) {
                     return arg;
                 }
