@@ -3,7 +3,7 @@ import * as net from "./lib/net.js";
 import { mouse, keyMap } from "./lib/net.js";
 import { colors, isHalloween, lerp, options, SERVER_URL, shakeElement } from "./lib/util.js";
 import { BIOME_BACKGROUNDS, BIOME_TYPES, DEV_CHEAT_IDS, SERVER_BOUND, terrains, WEARABLES } from "./lib/protocol.js";
-import { drawMob, drawPetal, getPetalIcon, drawUIPetal, petalTooltip, drawThirdEye, drawAntennae, pentagram, drawAmulet, drawPetalIconWithRatio, drawArmor } from "./lib/renders.js";
+import { drawMob, drawUIMob, drawPetal, getPetalIcon, drawUIPetal, petalTooltip, mobTooltip, drawThirdEye, drawAntennae, pentagram, drawAmulet, drawPetalIconWithRatio, drawArmor } from "./lib/renders.js";
 import { beginDragDrop, DRAG_TYPE_DESTROY, DRAG_TYPE_MAINDOCKER, DRAG_TYPE_SECONDARYDOCKER, dragConfig, updateAndDrawDragDrop } from "./lib/dragAndDrop.js";
 import { loadAndRenderChangelogs, showMenu, showMenus } from "./lib/menus.js";
 
@@ -159,8 +159,219 @@ let lastFlag = 0,
     mouseX = 0,
     mouseY = 0;
 
+canvas.addEventListener("touchstart", e => {
+    const touch = e.touches[0];
+    mouse.x = touch.clientX;
+    mouse.y = touch.clientY;
+    mouse.left = true;
+});
+
+canvas.addEventListener("touchmove", e => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const touch = e.touches[0];
+    mouse.x = (touch.clientX - rect.left) * scaleX;
+    mouse.y = (touch.clientY - rect.top) * scaleY;
+});
+
+canvas.addEventListener("touchend", e => {
+    mouse.left = false;
+});
+
+const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+
+if (isMobile) {
+    console.log("mobile device detected");
+} else {
+    console.log("desktop device detected");
+}
+
+export let joystick = {
+    on: false,
+    pointerId: null,
+    baseX: 250,
+    baseY: null,
+    stickX: 250,
+    stickY: null,
+    radius: 200,
+    angle: 0,
+    distance: 0
+};
+export let attackButton = {
+    on: false,
+    pointerId: null,
+    x: canvas.width - 250,
+    y: canvas.height - 250,
+    radius: 150
+};
+export let defendButton = {
+    on: false,
+    pointerId: null,
+    x: canvas.width - 250,
+    y: canvas.height - 500,
+    radius: 150
+};
+
+function updateButtons() {
+    attackButton.x = canvas.width - 250;
+    attackButton.y = canvas.height - 250;
+
+    defendButton.x = canvas.width - 250;
+    defendButton.y = canvas.height - 500;
+
+    joystick.baseY = canvas.height - 250;
+    if (!joystick.on) {
+        joystick.stickY = joystick.baseY;
+    }
+}
+
+updateButtons();
+window.addEventListener("resize", updateButtons);
+
+function drawButtons(ctx) {
+    ctx.globalAlpha = 0.2;
+    ctx.beginPath();
+    ctx.arc(joystick.baseX, joystick.baseY, joystick.radius, 0, Math.PI * 2);
+    ctx.fillStyle = "#000000";
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(joystick.stickX, joystick.stickY, joystick.radius / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.globalAlpha = attackButton.on ? 0.5 : 0.2;
+    ctx.beginPath();
+    ctx.arc(attackButton.x, attackButton.y, attackButton.radius, 0, Math.PI * 2);
+    ctx.fillStyle = "#000000";
+    ctx.fill();
+    ctx.globalAlpha = .7;
+    text("A", attackButton.x, attackButton.y, 100, colors.white, ctx, 0.00001);
+    ctx.globalAlpha = 1;
+
+    ctx.globalAlpha = defendButton.on ? 0.5 : 0.2;
+    ctx.beginPath();
+    ctx.arc(defendButton.x, defendButton.y, defendButton.radius, 0, Math.PI * 2);
+    ctx.fillStyle = "#000000";
+    ctx.fill();
+    ctx.globalAlpha = .7;
+    text("B", defendButton.x, defendButton.y, 100, colors.white, ctx, 0.00001);
+    ctx.globalAlpha = 1;
+}
+
+canvas.addEventListener("touchstart", e => {
+    if (mouse.left && net.state.isDead && net.state.socket?.readyState === WebSocket.OPEN) {
+        net.state.socket.spawn();
+        net.state.isDead = false;
+    }
+    for (const touch of e.changedTouches) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mx = (touch.clientX - rect.left) * scaleX;
+        const my = (touch.clientY - rect.top) * scaleY;
+
+        const dx = mx - joystick.baseX;
+        const dy = my - joystick.baseY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (!joystick.on && dist < joystick.radius) {
+            joystick.on = true;
+            joystick.pointerId = touch.identifier;
+            joystick.stickX = mx;
+            joystick.stickY = my;
+        }
+
+        const adx = mx - attackButton.x;
+        const ady = my - attackButton.y;
+        const adist = Math.sqrt(adx*adx + ady*ady);
+        if (!attackButton.on && adist < attackButton.radius) {
+            attackButton.on = true;
+            attackButton.pointerId = touch.identifier;
+            sendButtonInput(0x10);
+        }
+
+        const ddx = mx - defendButton.x;
+        const ddy = my - defendButton.y;
+        const ddist = Math.sqrt(ddx*ddx + ddy*ddy);
+        if (!defendButton.on && ddist < defendButton.radius) {
+            defendButton.on = true;
+            defendButton.pointerId = touch.identifier;
+            sendButtonInput(0x20);
+        }
+    }
+    e.preventDefault();
+});
+
+canvas.addEventListener("touchmove", e => {
+    for (const touch of e.changedTouches) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mx = (touch.clientX - rect.left) * scaleX;
+        const my = (touch.clientY - rect.top) * scaleY;
+
+        if (joystick.on && touch.identifier === joystick.pointerId) {
+            const dx = mx - joystick.baseX;
+            const dy = my - joystick.baseY;
+            const dist = Math.min(Math.sqrt(dx*dx + dy*dy), joystick.radius);
+            const angle = Math.atan2(dy, dx);
+            joystick.angle = angle;
+            joystick.distance = dist / joystick.radius;
+            joystick.stickX = joystick.baseX + Math.cos(angle) * dist;
+            joystick.stickY = joystick.baseY + Math.sin(angle) * dist;
+            processInputs();
+        }
+
+        if (attackButton.on && touch.identifier === attackButton.pointerId) {
+            sendButtonInput(0x10);
+        }
+
+        if (defendButton.on && touch.identifier === defendButton.pointerId) {
+            sendButtonInput(0x20);
+        }
+    }
+});
+
+canvas.addEventListener("touchend", e => {
+    for (const touch of e.changedTouches) {
+        if (touch.identifier === joystick.pointerId) {
+            joystick.on = false;
+            joystick.pointerId = null;
+            joystick.stickX = joystick.baseX;
+            joystick.stickY = joystick.baseY;
+            processInputs();
+        }
+
+        if (touch.identifier === attackButton.pointerId) {
+            attackButton.on = false;
+            attackButton.pointerId = null;
+            processInputs();
+        }
+
+        if (touch.identifier === defendButton.pointerId) {
+            defendButton.on = false;
+            defendButton.pointerId = null;
+            processInputs();
+        }
+    }
+});
+
+function sendButtonInput(flag) {
+    net.state.socket?.talk(SERVER_BOUND.INPUTS, flag);
+    lastFlag = flag;
+}
+
 function processInputs() {
     let newFlags = 0;
+
+    if (joystick.on) {
+        newFlags |= 0x80;
+        net.state.socket?.talk(SERVER_BOUND.INPUTS, newFlags);
+        lastFlag = newFlags;
+        return;
+    }
 
     if (keyMap.has("w") || keyMap.has("arrowup")) {
         newFlags |= 0x01;
@@ -197,7 +408,6 @@ function processInputs() {
         lastFlag = newFlags;
     }
 }
-
 window.addEventListener("keydown", e => {
     if (e.key === "Escape") {
         net.ChatMessage.showInput = !net.ChatMessage.showInput;
@@ -440,7 +650,8 @@ function draw() {
         cameraX, cameraY, scale, net.state.socket?.readyState === WebSocket.OPEN,
         net.state.room.width, net.state.room.height,
         net.state.disconnected ? null : BIOME_BACKGROUNDS[net.state.room.biome],
-        net.state.room.isRadial);
+        net.state.room.isRadial
+    );
 
     if (net.state.disconnected) {
         const sc = uiScale();
@@ -475,17 +686,161 @@ function draw() {
         ctx.restore();
     });
 
+    {
+        if (!net.state.previousMobs) {
+            net.state.previousMobs = new Map();
+            net.state.dyingMobs = new Map();
+            net.state.previousPetals = new Map();
+            net.state.dyingPetals = new Map();
+            net.state.previousPlayers = new Map();
+            net.state.dyingPlayers = new Map();
+        }
+    
+        const currentMobs = new Map();
+        const currentPetals = new Map();
+        const currentPlayers = new Map();
+        
+        net.state.mobs.forEach(mob => {
+            currentMobs.set(mob.id, mob);
+        });
+        net.state.petals.forEach(petal => {
+            currentPetals.set(petal.id, petal);
+        });
+        net.state.players.forEach(p => {
+            currentPlayers.set(p.id, p);
+        });
+        
+        net.state.previousMobs.forEach((mob, id) => {
+            if (!currentMobs.has(id)) {
+                net.state.dyingMobs.set(id, {
+                    mob,
+                    progress: 0
+                });
+            }
+        });
+        net.state.previousPetals.forEach((petal, id) => {
+            if (!currentPetals.has(id)) {
+                net.state.dyingPetals.set(id, {
+                    petal,
+                    progress: 0
+                });
+            }
+        });
+        net.state.previousPlayers.forEach((p, id) => {
+            if (!currentPlayers.has(id)) {
+                net.state.dyingPlayers.set(id, {
+                    player: p,
+                    progress: 0
+                });
+            }
+        });
+
+        net.state.dyingPetals.forEach((data, id) => {
+            const entity = data.petal;
+            data.progress += 0.2;
+            if (data.progress >= 1) {
+                net.state.dyingPetals.delete(id);
+                return;
+            }
+    
+            const fade = 1 - data.progress;
+            const scaling = 1.35 + data.progress;
+    
+            let drawX = entity.x * scale - cameraX + halfWidth,
+                drawY = entity.y * scale - cameraY + halfHeight;
+            const size = entity.size * scale * scaling;
+    
+            ctx.save();
+            ctx.globalAlpha = fade;
+            ctx.translate(drawX, drawY);
+            ctx.scale(size, size);
+            ctx.rotate(entity.facing);
+            drawPetal(entity.index, entity.hit, ctx, entity.id, entity.size);
+            ctx.restore();
+        });
+        
+        net.state.dyingMobs.forEach((data, id) => {
+            const entity = data.mob;
+            data.progress += 0.2;
+            if (data.progress >= 1) {
+                net.state.dyingMobs.delete(id);
+                return;
+            }
+        
+            const fade = 1 - data.progress;
+            const scaling = 1.35 + data.progress;
+        
+            let drawX = entity.x * scale - cameraX + halfWidth,
+                drawY = entity.y * scale - cameraY + halfHeight;
+            const size = entity.size * scale * scaling;
+
+            ctx.save();
+            ctx.globalAlpha = fade;
+            ctx.translate(drawX, drawY);
+            ctx.scale(size, size);
+            ctx.rotate(entity.facing);
+    
+            if (options.fancyGraphics && net.state.room.biome === BIOME_TYPES.HELL) {
+                ctx.shadowBlur = 10 * scale * (Math.sin(performance.now() / 500 + entity.id * 3) * .8 + .8);
+                ctx.shadowColor = "#FFFFFF";
+            }
+    
+            drawMob(entity.id, entity.index, entity.rarity, entity.hit, ctx, entity.attack, entity.friendly, entity.facing, entity.extraData, performance.now());
+            ctx.restore();
+        });
+    
+        net.state.dyingPlayers.forEach((data, id) => {
+            const entity = data.player;
+            data.progress += 0.2;
+            if (data.progress >= 1) {
+                net.state.dyingPlayers.delete(id);
+                return;
+            }
+    
+            const fade = 1 - data.progress;
+            const scaling = data.progress;
+    
+            let drawX = entity.x * scale - cameraX + halfWidth,
+                drawY = entity.y * scale - cameraY + halfHeight;
+            const size = (entity.size * scale) * scaling;
+    
+            ctx.save();
+            ctx.globalAlpha = fade;
+            ctx.translate(drawX, drawY);
+            ctx.scale(size, size);
+            
+            setStyle(mixColors([colors.playerYellow, colors.team1, colors.team2][entity.team] ?? colors.crafting, colors.legendary, entity.hit * .5), 5 * scale);
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, 1, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+    
+            drawFace(1 * .4, entity.facing, 1, .6, !0);
+    
+            ctx.restore();
+        });
+        
+        net.state.previousMobs = currentMobs;
+        net.state.previousPetals = currentPetals;
+        net.state.previousPlayers = currentPlayers;
+    }
+
     net.state.petals.forEach(entity => {
         entity.interpolate();
+        entity.size2 ??= entity.index === 24 || entity.index === 64 ? entity.size / 1.4 : entity.size;
+        if (entity.index === 24 || entity.index === 64) {
+            entity.size2 += (entity.size - entity.size2) * 0.25;
+        }
 
         let drawX = entity.x * scale - cameraX + halfWidth,
             drawY = entity.y * scale - cameraY + halfHeight;
 
         ctx.save();
         ctx.translate(drawX, drawY);
-        ctx.scale(entity.size * scale, entity.size * scale);
+        ctx.scale(entity.size2 * scale, entity.size2 * scale);
         ctx.rotate(entity.facing);
-        drawPetal(entity.index, entity.hit, ctx, entity.id);
+        drawPetal(entity.index, entity.hit, ctx, entity.id, entity.size2);
         ctx.restore();
 
         if (options.showHitboxes) {
@@ -494,6 +849,17 @@ function draw() {
             ctx.lineWidth = 1.5 * scale;
             ctx.strokeStyle = colors["???"];
             ctx.stroke();
+            ctx.closePath();
+        }
+        if (keyMap.has("g")) {
+            ctx.globalAlpha = .3;
+            ctx.beginPath();
+            ctx.arc(drawX, drawY, (entity.size * scale) * 1.4, 0, Math.PI * 2);
+            ctx.fillStyle = net.state.tiers[entity.rarity].color;
+            ctx.fill();
+            ctx.closePath();
+            ctx.globalAlpha = 1;
+            text(net.state.tiers[entity.rarity].name, drawX, drawY, (entity.size * scale) * 1.15, net.state.tiers[entity.rarity].color);
         }
     });
 
@@ -501,10 +867,14 @@ function draw() {
         let drawX = entity.x * scale - cameraX + halfWidth,
             drawY = entity.y * scale - cameraY + halfHeight,
             outlineTimer = (Math.sin(performance.now() / 250 + entity.id) + 1.5);
+        entity.creation ??= performance.now();
         ctx.save();
         ctx.translate(drawX, drawY);
-        ctx.scale(entity.size * scale, entity.size * scale);
-        ctx.rotate(Math.sin(performance.now() / 1500 + entity.id * Math.PI / 6) * .5);
+        entity.rotation ??= (Math.random() * (Math.PI / 6)) - (Math.PI / 12);
+
+        const aSin = Math.sin((performance.now() + entity.creation) / 200) * .05;
+        ctx.scale((1 + aSin) * entity.size * scale, (1 + aSin) * entity.size * scale);
+        ctx.rotate(entity.rotation);
 
         ctx.fillStyle = colors.black;
         ctx.beginPath();
@@ -538,7 +908,7 @@ function draw() {
             ctx.shadowColor = "#FFFFFF";
         }
 
-        drawMob(entity.id, entity.index, entity.rarity, entity.hit, ctx, entity.attack, entity.friendly, entity.facing, entity.extraData);
+        drawMob(entity.id, entity.index, entity.rarity, entity.hit, ctx, entity.attack, entity.friendly, entity.facing, entity.extraData, performance.now());
         ctx.restore();
 
         if (options.showHitboxes) {
@@ -551,17 +921,17 @@ function draw() {
 
         if (!options.hideEntityUI && !net.state.mobConfigs[entity.index].hideUI) {
             const barSize = Math.max(size, 30 * scale);
-            const barthicc = (6 + entity.rarity) * scale;
+            const barthicc = 5 + (entity.size * .1) * scale;
 
             drawBar(drawX - barSize, drawX + barSize, drawY + barSize + 13 * scale, barthicc, colors["???"]);
             drawBar(drawX - barSize, drawX - barSize + barSize * 2 * entity.secondaryHealthBar, drawY + barSize + 13 * scale, .667 * barthicc, colors.legendary);
             drawBar(drawX - barSize, drawX - barSize + barSize * 2 * entity.healthRatio, drawY + barSize + 13 * scale, .667 * barthicc, entity.poisoned ? mixColors(colors.common, colors.irisPurple, .5 + Math.sin(performance.now() / 333 + entity.id * 3) * .5) : colors.common);
 
             ctx.textAlign = "left";
-            text(net.state.mobConfigs[entity.index].name, drawX - barSize - barthicc * .5, drawY + barSize + 9 * scale - barthicc * .5, 8 * scale);
+            text(net.state.mobConfigs[entity.index].name, drawX - barSize - barthicc * .5, drawY + barSize + 8 * scale - barthicc * .5, 8.5 * scale);
 
             ctx.textAlign = "right";
-            text(net.state.tiers[entity.rarity].name, drawX + barSize + barthicc * .5, drawY + barSize + 19 * scale + barthicc * .5, 8 * scale, net.state.tiers[entity.rarity].color);
+            text(net.state.tiers[entity.rarity].name, drawX + barSize + barthicc * .5, drawY + barSize + 18 * scale + barthicc * .5, 8.5 * scale, net.state.tiers[entity.rarity].color);
         }
     });
 
@@ -575,16 +945,16 @@ function draw() {
 
         if (entity.attack) {
             expression = 2;
-            targetMouthDip = .35;
+            targetMouthDip = .6;
         }
 
         if (entity.defend) {
             expression = 3;
-            targetMouthDip = .9;
+            targetMouthDip = .8;
         }
 
-        entity.mood = lerp(entity.mood, expression, .15)
-        entity.mouthDip = lerp(entity.mouthDip, targetMouthDip, .15);
+        entity.mood = lerp(entity.mood, expression, .4)
+        entity.mouthDip = lerp(entity.mouthDip, targetMouthDip, .4);
 
         let drawX = entity.x * scale - cameraX + halfWidth,
             drawY = entity.y * scale - cameraY + halfHeight;
@@ -624,7 +994,7 @@ function draw() {
             ctx.save();
             ctx.translate(drawX, drawY);
             ctx.rotate(performance.now() / 250 + entity.id * 5);
-            ctx.scale(size * 1.325, size * 1.325);
+            ctx.scale(size * 1.35, size * 1.35);
             drawArmor(ctx);
             ctx.restore();
         }
@@ -635,7 +1005,7 @@ function draw() {
         ctx.fill();
 
         ctx.translate(drawX, drawY);
-        drawFace(size * .425, entity.facing, entity.mood, entity.mouthDip, expression);
+        drawFace(size * .4, entity.facing, entity.mood, entity.mouthDip, expression);
         ctx.translate(-drawX, -drawY);
 
         if (entity.wearing & WEARABLES.THIRD_EYE) {
@@ -696,8 +1066,8 @@ function draw() {
             ctx.lineTo(lightning.points[i].x * scale - cameraX + halfWidth, lightning.points[i].y * scale - cameraY + halfHeight);
         }
         ctx.lineWidth = 2 * scale;
-        ctx.strokeStyle = colors.lightningTeal;
-        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = colors.white;
+        ctx.globalAlpha = Math.pow(alpha, 4) * 1.25;
         ctx.stroke();
     });
 
@@ -722,10 +1092,11 @@ function draw() {
     const mX = mouse.x / uScale;
     const mY = mouse.y / uScale;
     net.state.petalHover = null;
+    net.state.mobHover = null;
 
     if (net.state.slots.length > 0) { // Slots
-        const boxSize = net.state.isInDestroy ? 64 * .75 : 65;
-        const padding = 10;
+        const boxSize = net.state.isInDestroy ? 48 : 72;
+        const padding = 12.5;
 
         const secondaryBoxSize = net.state.isInDestroy ? 65 : boxSize * .75;
 
@@ -742,10 +1113,19 @@ function draw() {
             const x = width / 2 - (boxSize + padding) * net.state.slots.length / 2 + (boxSize + padding) * i + padding / 2;
             const y = height - boxSize - secondaryBoxSize - padding * 3;
 
+            ctx.globalAlpha = .5;
             ctx.fillStyle = mixColors(colors.unique, "#000000", .2);
-            ctx.fillRect(x, y, boxSize, boxSize);
-            ctx.fillStyle = colors.unique;
-            ctx.fillRect(x + 4, y + 4, boxSize - 8, boxSize - 8);
+            ctx.beginPath();
+            ctx.roundRect(x, y, boxSize, boxSize, 4);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.fillStyle = colors.unique
+            ctx.beginPath();
+            ctx.roundRect(x + 5, y + 5, boxSize - 10, boxSize - 10, 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.globalAlpha = 1;
 
             if (slot.index !== -1 && ((!dragConfig.enabled || dragConfig.type !== DRAG_TYPE_MAINDOCKER) || dragConfig.index !== i)) {
                 if (slot.icon === undefined) {
@@ -777,9 +1157,9 @@ function draw() {
                 }
 
                 if (mX > x && mX < x + boxSize && mY > y && mY < y + boxSize) {
-                    net.state.petalHover = [slot.index, slot.rarity];
+                    net.state.petalHover = [slot.index, slot.rarity, x, y];
 
-                    if (mouse.left && !dragConfig.enabled) {
+                    if (mouse.left && !dragConfig.enabled && !joystick.on) {
                         beginDragDrop(x + boxSize / 2, y + boxSize / 2, boxSize, slot.index, slot.rarity);
                         dragConfig.type = DRAG_TYPE_MAINDOCKER;
                         dragConfig.index = i;
@@ -810,16 +1190,25 @@ function draw() {
             }
 
             const minXOfSecondary = width / 2 - (secondaryBoxSize + padding) * net.state.slots.length / 2 + padding / 2;
-            text("[x]", minXOfSecondary - secondaryBoxSize / 2, y + secondaryBoxSize / 2, 15);
+            text("[x]", minXOfSecondary - secondaryBoxSize / 2.25, y + secondaryBoxSize / 2, 15);
 
             for (let i = 0; i < net.state.slots.length; i++) {
                 const slot = net.state.secondarySlots[i];
                 const x = width / 2 - (secondaryBoxSize + padding) * net.state.slots.length / 2 + (secondaryBoxSize + padding) * i + padding / 2;
 
+                ctx.globalAlpha = .5;
                 ctx.fillStyle = mixColors(colors.unique, "#000000", .2);
-                ctx.fillRect(x, y, secondaryBoxSize, secondaryBoxSize);
-                ctx.fillStyle = colors.unique;
-                ctx.fillRect(x + 3, y + 3, secondaryBoxSize - 6, secondaryBoxSize - 6);
+                ctx.beginPath();
+                ctx.roundRect(x, y, secondaryBoxSize, secondaryBoxSize, 4);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.fillStyle = colors.unique
+                ctx.beginPath();
+                ctx.roundRect(x + 4, y + 4, secondaryBoxSize - 8, secondaryBoxSize - 8, 2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.globalAlpha = 1;
 
                 if (slot.icon === undefined) {
                     slot.icon = new net.IconItem();
@@ -841,9 +1230,9 @@ function draw() {
                     ctx.restore();
 
                     if (mX > x && mX < x + secondaryBoxSize && mY > y && mY < y + secondaryBoxSize) {
-                        net.state.petalHover = [slot.index, slot.rarity];
+                        net.state.petalHover = [slot.index, slot.rarity, x, y];
 
-                        if (mouse.left && !dragConfig.enabled) {
+                        if (mouse.left && !dragConfig.enabled && !joystick.on) {
                             beginDragDrop(x + boxSize / 2, y + boxSize / 2, boxSize, slot.index, slot.rarity);
                             dragConfig.type = DRAG_TYPE_SECONDARYDOCKER;
                             dragConfig.index = i;
@@ -859,7 +1248,7 @@ function draw() {
                     }
                 }
 
-                // Keybind
+                // Keybinds
                 text(`[${(i + 1) % 10}]`, x + secondaryBoxSize / 2, y + secondaryBoxSize + padding, 12);
             }
         }
@@ -873,10 +1262,18 @@ function draw() {
             net.state.destroyIcon.realSize = secondaryBoxSize;
             net.state.destroyIcon.interpolate();
 
+            ctx.beginPath();
             ctx.fillStyle = mixColors(colors.skillTree, "#000000", .2);
-            ctx.fillRect(maxXOfSecondary, y, secondaryBoxSize, secondaryBoxSize);
-            ctx.fillStyle = colors.skillTree;
-            ctx.fillRect(maxXOfSecondary + 3, y + 3, secondaryBoxSize - 6, secondaryBoxSize - 6);
+            ctx.roundRect(maxXOfSecondary, y, secondaryBoxSize, secondaryBoxSize, 4);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.fillStyle = colors.skillTree
+            ctx.roundRect(maxXOfSecondary + 4, y + 4, secondaryBoxSize - 8, secondaryBoxSize - 8, 2);
+            ctx.closePath();
+            ctx.fill();
+            
             text("Destroy", maxXOfSecondary + secondaryBoxSize / 2, y + secondaryBoxSize / 2, secondaryBoxSize / 5);
             text("[k]", maxXOfSecondary + secondaryBoxSize / 2, y + secondaryBoxSize + padding, 12);
         }
@@ -902,12 +1299,12 @@ function draw() {
             ctx.stroke();
 
             if (player) {
-                drawFace(35 * .425, player.facing, player.mood, player.mouthDip, player.attack ? 2 : player.defend ? 3 : 1);
+                drawFace(13, player.facing, player.mood, player.mouthDip, player.attack ? 2 : player.defend ? 3 : 1);
                 drawBar(70, 70 + 155 * player.secondaryHealthBar, 0, 25, colors.legendary);
                 drawBar(70, 70 + 155 * player.healthRatio, 0, 27.5, player.poisoned ? mixColors(colors.common, colors.irisPurple, .5 + Math.sin(performance.now() / 333 + player.id * 3) * .5) : colors.common);
                 cuteLittleAnimations.nameText = lerp(cuteLittleAnimations.nameText, 197.5, .1);
             } else {
-                drawFace(35 * .425, 0, 1, 1, 1, true);
+                drawFace(13, 0, 1, .6, 1, true);
                 cuteLittleAnimations.nameText = lerp(cuteLittleAnimations.nameText, 180, .1);
             }
 
@@ -1039,18 +1436,245 @@ function draw() {
         ctx.textBaseline = "middle";
         text("Wave " + net.state.waveInfo.wave, width / 2, 30, 35);
         drawBar(width / 2 - 200, width / 2 + 200, 65, 30, colors["???"]);
-        drawBar(width / 2 - 200, width / 2 - 200 + 400 * (net.state.waveInfo.livingMobs / net.state.waveInfo.maxMobs), 65, 25, colors.common);
+        drawBar(width / 2 - 200, width / 2 - 200 + 400 * (net.state.waveInfo.livingMobs / net.state.waveInfo.maxMobs), 65, 22.5, mixColors(BIOME_BACKGROUNDS[net.state.room.biome].color, colors.white, .2));
         text(net.state.waveInfo.livingMobs + " / " + net.state.waveInfo.maxMobs, width / 2, 65, 22.5);
+        if (net.state.waveInfo.currentMobs) { // Icons
+            const mX = mouse.x / uiScale();
+            const mY = mouse.y / uiScale();
+            let boxSize = 80;
+            let gapY = -40;
+            let gapX = 10;
+        
+            const groupedByIndex = {};
+            for (const mob of net.state.waveInfo.currentMobs) {
+                if (!groupedByIndex[mob.index]) groupedByIndex[mob.index] = {};
+                if (!groupedByIndex[mob.index][mob.rarity]) {
+                    groupedByIndex[mob.index][mob.rarity] = {
+                        index: mob.index,
+                        rarity: mob.rarity,
+                        count: 0
+                    };
+                }
+                groupedByIndex[mob.index][mob.rarity].count++;
+            }
+        
+            const mobStacks = Object.entries(groupedByIndex)
+                .map(([index, rarities]) => Object.values(rarities).sort((a, b) => a.rarity - b.rarity))
+                .sort((a, b) => {
+                    if (a[0].index === 255) return -1;
+                    if (b[0].index === 255) return 1;
+                    return a[0].index - b[0].index;
+                });
+            boxSize -= mobStacks.length
+            gapX -= mobStacks.length
+        
+            mobStacks.forEach((stack, stackI) => {
+                stack.forEach((entity, rarityI) => {
+                    const x = width / 2 + 45 - (80 / 2) + (stackI - mobStacks.length / 2) * (80 + gapX);
+                    const y = 100 + rarityI * (80 + gapY);
+                    let defaultIconSize = net.state.mobConfigs[entity.index]?.wavesIconSize ?? 3.5;
+        
+                    setStyle(net.state.tiers[entity.rarity].color, 5);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.roundRect(x, y, boxSize, boxSize, 5);
+                    ctx.fill();
+                    ctx.clip();
+        
+                    ctx.translate(x + boxSize / 2, y + boxSize / 2);
+
+                    if (mX > x && mX < x + boxSize && mY > y && mY < y + boxSize) {
+                        net.state.mobHover = [entity.index, entity.rarity, x + (boxSize / 2) - (350 / 2), y + boxSize + 10];
+                    }
+                    let indexScales = {
+                        0: 3.5, // Ladybug
+                        1: 3.5, // Rock
+                        2: 3.5, // Bee
+                        3: 5, // Spider
+                        4: 3.5, // Beetle
+                        5: 3, // Leafbug
+                        6: 3.5, // Roach
+                        7: 3.5, // Hornet
+                        8: 3.25, // Mantis
+                        9: 3.75, // Pupa
+                        10: 3, // Sandstorm
+                        11: 3.25, // Scorpion
+                        12: 3, // Demon
+                        13: 3.5, // Jellyfish
+                        14: 3.5, // Cactus
+                        15: 5.25, // Baby Ant
+                        16: 5.25, // Worker Ant
+                        17: 4, // Soldier Ant
+                        18: 5.25, // Queen Ant
+                        19: 3.5, // Ant Hole
+                        20: 5.25, // Baby Fire Ant
+                        21: 5.25, // Worker Fire Ant
+                        22: 5.25, // Soldier Fire Ant
+                        23: 5.25, // Queen Fire Ant
+                        24: 3.5, // Fire Ant Hole
+                        25: 5.25, // Baby Termite
+                        26: 5.25, // Worker Termite
+                        27: 5.25, // Soldier Termite
+                        28: 3.5, // Termite Overmind
+                        29: 3.5, // Termite Mound
+                        30: 5, // Ant Egg
+                        31: 5, // Queen Ant Egg
+                        32: 5, // Fire Ant Egg
+                        33: 5, // Queen Fire Ant Egg
+                        34: 5, // Termite Egg
+                        35: 3.5, // Evil Ladybug
+                        36: 3.5, // Shiny Ladybug
+                        37: 3.5, // Angelic Ladybug
+                        38: 4, // Centipede
+                        39: 4, // Centipede Body
+                        40: 4, // Desert Centipede
+                        41: 4, // Desert Centipede Body
+                        42: 4, // Evil Centipede
+                        43: 4, // Evil Centipede Body
+                        44: 4, // Dandelion
+                        45: 3, // Sponge
+                        46: 3.5, // Bubble
+                        47: 3, // Shelll
+                        48: 5, // Starfish
+                        49: 3.35, // Leech
+                        50: 3, // Maggot
+                        51: 5, // Firefly
+                        52: 3.5, // Bumblebee
+                        53: 4, // Moth
+                        54: 4, // Fly
+                        55: 3, // Square
+                        56: 3, // Triangle
+                        57: 3, // Pentagon
+                        58: 3.5, // Hell Beetle
+                        59: 5, // Hell Spider
+                        60: 3.5, // Hell Yellowjacket
+                        61: 4, // Termite Overmind Egg
+                        62: 3.5, // Spirit
+                        63: 3.5, // Wasp
+                        64: 6, // Stickbug
+                        65: 3.5, // Hell Beetle
+                        66: 4, // Hell Centipede Body
+                        67: 4, // Hell Centipede Body
+                        68: 3.5, // Wilt
+                        69: 3.5, // Wilt Branch
+                        70: 3.5, // Pumpkin
+                        71: 3.5, // Jack O Lantern
+                        72: 4, // Crab
+                        73: 4, // Tank
+                        
+                        255: 3.5, // Bot
+                    }
+
+                    let scale = indexScales[entity.index] ? boxSize / indexScales[entity.index] : boxSize / defaultIconSize
+                    
+                    ctx.scale(scale, scale);
+                    if (entity.index !== 255) {
+                        if (entity.index !== 46 && entity.index !== 49 && entity.index !== 55) {
+                            ctx.rotate(-Math.PI / 4);
+                        }
+                        drawUIMob(entity.index, entity.rarity, ctx);
+                    } else {
+                        setStyle(colors.crafting, .135);
+                        
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 1, 0, 2 * Math.PI);
+                        ctx.fill();
+                        ctx.stroke();
+                        drawFace(.35, -Math.PI / 4, 1.7, 1.7, 1);
+                    }
+        
+                    ctx.restore();
+        
+                    ctx.beginPath();
+                    ctx.roundRect(x, y, boxSize, boxSize, 5);
+                    ctx.stroke();
+
+                    if (entity.count > 1) {
+                        ctx.save();
+                        text(`x${entity.count}`, x + boxSize - 6, y + 4, boxSize * 0.3, colors.white);
+                        ctx.restore();
+                    }
+                });
+            });
+        }
     }
 
-    if (net.state.petalHover !== null) { // Tooltip
-        ctx.save();
-        ctx.translate(width - 360, 10 + (options.showDebug ? 40 : 0));
-        const img = petalTooltip(...net.state.petalHover);
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
-        ctx.drawImage(img, 0, 0, 350, 350 * img.height / img.width);
-        ctx.restore();
+    { // Hovers
+        net.state.petalHoverAlpha ??= 0;
+        net.state.lastPetalHover ??= null;
+        
+        if (net.state.petalHover !== null) {
+            net.state.lastPetalHover = [...net.state.petalHover];
+            net.state.petalHoverAlpha += 0.25;
+        } else {
+            net.state.petalHoverAlpha -= 0.25;
+        }
+    
+        net.state.petalHoverAlpha = Math.max(0, Math.min(1, net.state.petalHoverAlpha));
+    
+        if (net.state.lastPetalHover) {
+            ctx.save();
+            const img = petalTooltip(...net.state.lastPetalHover);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+        
+            if (net.state.petalHoverAlpha > 0) {
+                ctx.globalAlpha = net.state.petalHoverAlpha;
+                let bw = 350;
+                let bh = 350 * img.height / img.width;
+            
+                let x = net.state.lastPetalHover[2] - 150;
+                let y = net.state.lastPetalHover[3] - bh - 10;
+    
+                x = Math.max(0, Math.min(x, width - bw));
+            
+                ctx.drawImage(img, x, y, bw, bh);
+            }
+        
+            ctx.restore();
+        
+            if (net.state.petalHoverAlpha === 0) {
+                net.state.lastPetalHover = null;
+            }
+        }
+
+        net.state.mobHoverAlpha ??= 0;
+        net.state.lastMobHover ??= null;
+        
+        if (net.state.mobHover !== null) {
+            net.state.lastMobHover = [...net.state.mobHover];
+            net.state.mobHoverAlpha += 0.25;
+        } else {
+            net.state.mobHoverAlpha -= 0.25;
+        }
+    
+        net.state.mobHoverAlpha = Math.max(0, Math.min(1, net.state.mobHoverAlpha));
+    
+        if (net.state.lastMobHover) {
+            ctx.save();
+            const img = mobTooltip(...net.state.lastMobHover);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+        
+            if (net.state.mobHoverAlpha > 0) {
+                ctx.globalAlpha = net.state.mobHoverAlpha;
+                let bw = 350;
+                let bh = -350 * img.height / img.width;
+            
+                let x = net.state.lastMobHover[2];
+                let y = net.state.lastMobHover[3] - bh;
+    
+                x = Math.max(0, Math.min(x, width - bw));
+            
+                ctx.drawImage(img, x, y, bw, bh);
+            }
+        
+            ctx.restore();
+        
+            if (net.state.mobHoverAlpha === 0) {
+                net.state.lastMobHover = null;
+            }
+        }
     }
 
     updateAndDrawDragDrop(mX, mY);
@@ -1060,7 +1684,11 @@ function draw() {
         ctx.fillRect(0, 0, width, height);
         text("You died", width / 2, height / 2, 30);
         text(net.state.killMessage, width / 2, height / 2 + 30, 15);
-        text("(Press ENTER to respawn)", width / 2, height / 2 + 60, 15);
+        if (isMobile) {
+            text("(Press anywhere to respawn)", width / 2, height / 2 + 60, 15);
+        } else {
+            text("(Press ENTER to respawn)", width / 2, height / 2 + 60, 15);
+        }
     }
 
     if (options.showDebug) {
@@ -1082,15 +1710,13 @@ function draw() {
 
     ctx.restore();
 
+    drawButtons(ctx)
+
     clientDebug.frames++;
     clientDebug.totalTime += performance.now() - start;
 }
 
 draw();
-
-if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
-    document.getElementById("gamemodeSelect").appendChild(new Option("loc maze", "maze"));
-}
 
 if (isHalloween) {
     document.getElementById("biomeSelect").appendChild(new Option("Halloween", "halloween"));
