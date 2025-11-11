@@ -216,6 +216,7 @@ export class PlayerClientCache {
 export class PetalClientCache {
     id = 0;
     index = 0;
+    rarity = 0;
     isNew = true;
 
     x = 0;
@@ -269,6 +270,7 @@ export class PetalClientCache {
             writer.setUint32(this.id);
             writer.setUint8(ENTITY_FLAGS.NEW);
             writer.setUint8(this.index);
+            writer.setUint8(this.rarity);
             writer.setFloat32(this.x);
             writer.setFloat32(this.y);
             writer.setFloat32(this.size);
@@ -529,10 +531,10 @@ export class Camera {
     see(writer) {
         const retrieved = state.viewsSpatialHash.retrieve({
             _AABB: {
-                x1: this.x - this.fov / 2,
-                y1: this.y - this.fov / 2,
-                x2: this.x + this.fov / 2,
-                y2: this.y + this.fov / 2
+                x1: this.x - this.fov / 1.85,
+                y1: this.y - this.fov / 1.85,
+                x2: this.x + this.fov / 1.85,
+                y2: this.y + this.fov / 1.85
             }
         });
 
@@ -555,6 +557,7 @@ export class Camera {
                         const cache = new PetalClientCache();
                         cache.id = entity.id;
                         cache.index = entity.index;
+                        cache.rarity = entity.rarity;
                         cache.isNew = true;
                         this.petalCache.set(entity.id, cache);
                     }
@@ -567,7 +570,7 @@ export class Camera {
                         const cache = new MobClientCache();
                         cache.id = entity.id;
                         cache.index = entity.index;
-                        cache.rarity = entity.rarity;
+                        cache.rarity = entity.rarity;;
                         cache.isNew = true;
                         this.mobCache.set(entity.id, cache);
                     }
@@ -623,6 +626,7 @@ export class Camera {
             writer.setFloat32(drop.size);
             writer.setUint8(drop.index);
             writer.setUint8(drop.rarity);
+            writer.setUint16(drop.duration);
         });
 
         writer.setUint32(0);
@@ -913,6 +917,14 @@ export default class Client {
                     this.body.setSlot(i, this.slots[i].id, this.slots[i].rarity);
                 }
 
+                this.body.spawnInvincibility = true
+            
+                setTimeout(() => {
+                    if (this.body) {
+                        this.body.spawnInvincibility = false;
+                    }
+                }, 2 * 1000);
+
                 if (state.isTDM) {
                     this.body.team = -this.team;
                 }
@@ -929,7 +941,7 @@ export default class Client {
 
                 const flags = reader.getUint8();
 
-                if ((flags & 0x40) === 0x40) {
+                if ((flags & 0x40) === 0x40 || (flags & 0x80) === 0x80) {
                     this.body.moveAngle = reader.getFloat32();
                     this.body.moveStrength = Math.min(1, Math.max(0, reader.getFloat32())) * this.body.speed;
                 } else {
@@ -1374,6 +1386,12 @@ export default class Client {
             writer.setUint16(state.currentWave);
             writer.setUint16(state.livingMobCount);
             writer.setUint16(state.maxMobs);
+            writer.setUint16(state.currentMobs.length);
+        
+            for (const entity of state.currentMobs) {
+                writer.setUint8(entity.index);
+                writer.setUint8(entity.rarity);
+            }
         } else {
             writer.setUint8(0);
         }
