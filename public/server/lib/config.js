@@ -459,7 +459,7 @@ export const mobConfigs = [
     new MobConfig("Sandstorm", 45, 15, 35, 3)
         .setSandstormMovement(1)
         .setSize(35, MobTier.SIZE_SCALE, .9, .25)
-        .addDrop(petalIDOf("Sand"), 1)
+        .addDrop(petalIDOf("Sand"))
         .addDrop(petalIDOf("Glass"), .7)
         .addDrop(petalIDOf("Stick"), .2, 2),
     new MobConfig("Scorpion", 45, 7.5, 32.5, 3)
@@ -504,8 +504,7 @@ export const mobConfigs = [
     new MobConfig("Cactus", 50, 20, 30, 0)
         .setPushability(0.5)
         .addDrop(petalIDOf("Cactus"))
-        .addDrop(petalIDOf("Stinger"), .8)
-        .addDrop(petalIDOf("Stick"), 1, 2),
+        .addDrop(petalIDOf("Stinger"), .8),
     new MobConfig("Baby Ant", 10, 5, 15, 2)
         .addDrop(petalIDOf("Light"), .4)
         .addDrop(petalIDOf("Faster"), .4)
