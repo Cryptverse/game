@@ -47,7 +47,7 @@ export const petalConfigs = [
         .setSize(1.3)
         .setWingMovement(true)
         .setDescription("It comes and it goes."),
-    new PetalConfig("Bone", 22.5 * 1.5, 12, 6)
+    new PetalConfig("Bone", 22.5 * 1.5, 10, 6)
         .setSize(1.6)
         .setArmor(6)
         .setDescription("A petal that reduces incoming damage."),
@@ -59,7 +59,7 @@ export const petalConfigs = [
         .setHuddles(1)
         .setDescription("The extra soil gives your flower more mass, but it does slow you down a bit..."),
     new PetalConfig("Magnolia", 22.5 * 1.5, 8, 8)
-        .setConstantHeal(2.5)
+        .setConstantHeal(3)
         .setExtraHealth(20)
         .setSize(1.5)
         .setDescription("A purely magical petal that heals you over time while simultaneously making you tougher."),
@@ -73,7 +73,7 @@ export const petalConfigs = [
     new PetalConfig("Orange", 22.5 * .75, 12.5, 7.5)
         .setMulti(3, true)
         .setDescription("A bunch of oranges. They're pretty juicy."),
-    new PetalConfig("Missile", 22.5 * 1, 5, 20)
+    new PetalConfig("Missile", 22.5 * 1, 5, 18)
         .setLaunchable(.7, 45)
         .setSize(1.35)
         .setDescription("You can actually shoot this one!"),
@@ -137,7 +137,7 @@ export const petalConfigs = [
         .setPoison(2.5, 5)
         .setDescription("[object null object]"),
     new PetalConfig("Dahlia", 22.5 * .75, 5, 5)
-        .setHealing(2)
+        .setHealing(3)
         .setSize(.5)
         .setHuddles(1)
         .setMulti(3, true)
@@ -182,7 +182,7 @@ export const petalConfigs = [
         .setSpeedMultiplier(1.03)
         .setHuddles(1)
         .setDescription("This special cocaine will make you go fast!"),
-    new PetalConfig("Ant Egg", 22.5 * 2.5, 8, 4)
+    new PetalConfig("Ant Egg", 22.5 * 2.5, 25, 1)
         .setSize(1.1)
         .setMulti(4, false)
         .setHuddles(1)
@@ -349,11 +349,7 @@ export const petalConfigs = [
     new PetalConfig("Pentagon Egg", 22.5 * 4, 200, 4)
         .setSize(1.8)
         .setHuddles(1)
-        .setDescription("This isn't from this world..."),
-    new PetalConfig("My 1st Custom", 22.5 * 1, 10, 10)
-        .setSize(1.5)
-        .setHuddles(1)
-        .setDrawing(new Drawing().addAction("beginPath").addAction("opacity", 0.5).addAction("circle", 0, 0, 1).addAction("paint", "#55CACA", .4, .2).addAction("closePath"))
+        .setDescription("This isn't from this world...")
 ];
 
 export const petalIDOf = name => petalConfigs.findIndex(p => p.name === name);
@@ -507,9 +503,9 @@ export const mobConfigs = [
         .addDrop(petalIDOf("Jelly")),
     new MobConfig("Cactus", 50, 20, 30, 0)
         .setPushability(0.5)
-        .addDrop(petalIDOf("Cactus"), .9)
-        .addDrop(petalIDOf("Stinger"), 2)
-        .addDrop(petalIDOf("Stick"), .05),
+        .addDrop(petalIDOf("Cactus"))
+        .addDrop(petalIDOf("Stinger"), .8)
+        .addDrop(petalIDOf("Stick"), 1, 2),
     new MobConfig("Baby Ant", 10, 5, 15, 2)
         .addDrop(petalIDOf("Light"), .4)
         .addDrop(petalIDOf("Faster"), .4)
