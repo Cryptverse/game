@@ -203,9 +203,9 @@ export const petalConfigs = [
         .setDamageReflection(.175, .275)
         .setDescription("What an oddity! It's said to reflect a portion of incoming conventional damage. Does not stack."),
     new PetalConfig("Jelly", 23, 9, 7)
-        .setDensity(5)
+        .setDensity(20)
         .setDescription("Super bouncy! Knocks all your enemies around. Very fun to use and cause problems with."),
-    new PetalConfig("Yggdrasil", 22.5 * 45, 1e-15, 0)
+    new PetalConfig("Yggdrasil", 22.5 * 45, Infinity, 0)
         .setDeathDefying(.15, 2.5)
         .setHuddles(1)
         .setPhases(1)
@@ -213,7 +213,7 @@ export const petalConfigs = [
     new PetalConfig("Glass", 22.5 * 2, 1e-15, 2.5)
         .setPhases(1)
         .setDescription("A shard of glass that phases through enemies."),
-    new PetalConfig("Dandelion", 22.5 * 1, 8, 11)
+    new PetalConfig("Dandelion", 22.5 * 1, 10, 8)
         .setMulti(2, false)
         .setSize(1.4)
         .setLaunchable(.575, 35)
@@ -229,7 +229,7 @@ export const petalConfigs = [
             6 * 22.5, 7 * 22.5, 8 * 22.5
         ])
         .setDescription("It absorbs conventional damage done to your flower. If incoming damage is too great, you will suffer all of the damage the sponge has contained at once."),
-    new PetalConfig("Pearl", 22.5 * 2, 23, 7)
+    new PetalConfig("Pearl", 22.5 * 2, 23, 6.5)
         .setSize(2)
         .setPlaceDown(1)
         .setDescription("A pearl that can be placed on the ground. You can call it back to you at any time."),
@@ -264,7 +264,7 @@ export const petalConfigs = [
         .setEnemySpeedMultiplier(.7, 5)
         .setLaunchable(1, 35)
         .setDescription("This sticky goo isn't good for you..."),
-    new PetalConfig("Maggot Poo", 22.5 * 1, 5, 5)
+    new PetalConfig("Maggot Poo", 22.5 * 1, 5, 5.5)
         .setSize(1.3)
         .setDamageReflection(.05)
         .setLaunchable(0, 75)
@@ -280,7 +280,7 @@ export const petalConfigs = [
         .setSize(1.34)
         .setLightning(4, 32 * 8, 5, [2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7], true)
         .setDescription("A battery that can release electric charges when hit."),
-    new PetalConfig("Dust", 22.5 * .75, 7.5, 6)
+    new PetalConfig("Dust", 22.5 * .75, 6, 7.5)
         .setMulti(3, true)
         .setLaunchable(.7, 55)
         .setDensity(1.5)
@@ -294,7 +294,7 @@ export const petalConfigs = [
     new PetalConfig("Wasp Missile.projectile", 22.5 * 100, 4, 4)
         .setPoison(2, 8)
         .setDescription("[object null object]"),
-    new PetalConfig("Shrub", 22.5 * 1.5, 18, 6)
+    new PetalConfig("Shrub", 22.5 * 1.5, 15, 6)
         .setSize(1.2)
         .setExtraHealth(15)
         .setPoison(3, 2)
@@ -362,8 +362,7 @@ petalConfigs[petalIDOf("Grapes")].setSplits(petalIDOf("projectile.grape"), 4);
 export const mobConfigs = [
     new MobConfig("Ladybug", 25, 10, 25, 2.5)
         .addDrop(petalIDOf("Light"))
-        .addDrop(petalIDOf("Rose"), .6)
-        .addDrop(petalIDOf("Pollen"), .4),
+        .addDrop(petalIDOf("Rose"), .6),
     new MobConfig("Rock", 75, 5, 27.5, 0)
         .addDrop(petalIDOf("Rock"))
         .addDrop(petalIDOf("Heavy"), .5),
@@ -517,8 +516,7 @@ export const mobConfigs = [
     new MobConfig("Soldier Ant", 25, 5, 15, 3.5)
         .setAggressive(1)
         .addDrop(petalIDOf("Faster"), .4)
-        .addDrop(petalIDOf("Wing"), .2)
-        .addDrop(petalIDOf("Glass"), .1),
+        .addDrop(petalIDOf("Wing"), .2),
     new MobConfig("Queen Ant", 100, 5, 25, 3.5)
         .setAggressive(1)
         .setPushability(0.8)
@@ -540,8 +538,7 @@ export const mobConfigs = [
     new MobConfig("Soldier Fire Ant", 25, 10, 15, 3.5)
         .setAggressive(1)
         .addDrop(petalIDOf("Faster"), .4)
-        .addDrop(petalIDOf("Wing"), .2)
-        .addDrop(petalIDOf("Yucca"), .1),
+        .addDrop(petalIDOf("Glass"), .2),
     new MobConfig("Queen Fire Ant", 100, 10, 25, 3.5)
         .setAggressive(1)
         .setPushability(0.8)
