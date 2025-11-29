@@ -264,6 +264,7 @@ export class PetalSlot {
                         const conf = petalConfigs[this.config.shootsOut];
                         const tier = conf.tiers[this.rarity];
 
+                        newPet.rarity = this.rarity
                         newPet.size = conf.sizeRatio * Math.pow(1.3, this.rarity);
                         newPet.health.set(tier.health);
                         newPet.damage = tier.damage;
@@ -294,40 +295,92 @@ export class PetalSlot {
                 }
 
                 if (this.config.tiers[this.rarity].healing) {
+                    let targets = [];
+                    
+                    state.spatialHash.retrieve({
+                        _AABB: {
+                            x1: this.player.x - 150,
+                            y1: this.player.y - 150,
+                            x2: this.player.x + 150,
+                            y2: this.player.y + 150
+                        }
+                    }).forEach(entity => {
+                        if (entity.type !== ENTITY_TYPES.MOB && entity.type !== ENTITY_TYPES.PETAL && entity.team === this.player.team) {
+                            targets.push(entity);
+                        }
+                    });
+                
+                    let target = null;
+                
                     if (this.player.health.ratio < 1) {
+                        target = this.player;
+                    } else {
+                        let teammates = targets.filter(t => t !== this.player && t.health?.ratio < 1);
+                
+                        if (teammates.length > 0) {
+                            target = teammates.sort((a, b) => quickDiff(petal, a) - quickDiff(petal, b))[0];
+                        }
+                    }
+                
+                    if (target) {
                         petal.range--;
-
+                    
+                        petal.moveAngle = Math.atan2(target.y - petal.y, target.x - petal.x);
+                    
                         if (petal.range <= 0) {
-                            petal.moveAngle = Math.atan2(this.player.y - petal.y, this.player.x - petal.x);
-
-                            if (quickDiff(petal, this.player) < this.player.size) {
-                                this.player.health.health = Math.min(this.player.health.maxHealth, this.player.health.health + this.config.tiers[this.rarity].healing);
+                            if (quickDiff(petal, target) < target.size) {
+                                target.health.health = Math.min(target.health.maxHealth, target.health.health + this.config.tiers[this.rarity].healing);
                                 petal.destroy();
                             }
-
                             continue;
                         }
                     } else {
-                        petal.range = 22.5 * 1.5;
+                        petal.range = 22.5 * 1;
                     }
                 }
 
                 if (this.config.tiers[this.rarity].shield > 0) {
-                    if (this.player.health.shieldRatio < 1) {
+                    let targets = [];
+                    
+                    state.spatialHash.retrieve({
+                        _AABB: {
+                            x1: this.player.x - 150,
+                            y1: this.player.y - 150,
+                            x2: this.player.x + 150,
+                            y2: this.player.y + 150
+                        }
+                    }).forEach(entity => {
+                        if (entity.type !== ENTITY_TYPES.MOB && entity.type !== ENTITY_TYPES.PETAL && entity.team === this.player.team) {
+                            targets.push(entity);
+                        }
+                    });
+                
+                    let target = null;
+                
+                    if (this.player.health.shieldRatio < .95) {
+                        target = this.player;
+                    } else {
+                        let teammates = targets.filter(t => t !== this.player && t.health?.shieldRatio < .95);
+                
+                        if (teammates.length > 0) {
+                            target = teammates.sort((a, b) => quickDiff(petal, a) - quickDiff(petal, b))[0];
+                        }
+                    }
+                
+                    if (target) {
                         petal.range--;
-
+                    
+                        petal.moveAngle = Math.atan2(target.y - petal.y, target.x - petal.x);
+                    
                         if (petal.range <= 0) {
-                            petal.moveAngle = Math.atan2(this.player.y - petal.y, this.player.x - petal.x);
-
-                            if (quickDiff(petal, this.player) < this.player.size) {
-                                this.player.health.shield = Math.min(this.player.health.maxHealth, this.player.health.shield + this.config.tiers[this.rarity].shield);
+                            if (quickDiff(petal, target) < target.size) {
+                                target.health.shield = Math.min(target.health.maxHealth, target.health.shield + this.config.tiers[this.rarity].shield);
                                 petal.destroy();
                             }
-
                             continue;
                         }
                     } else {
-                        petal.range = 22.5 * 1.5;
+                        petal.range = 22.5 * 1;
                     }
                 }
 
@@ -389,6 +442,7 @@ export class PetalSlot {
                     if (petal.range <= 0 && this.player.attack) {
                         for (let i = 0; i < this.config.splits.count; i++) {
                             const newPet = new Petal(this.player, -1, -1);
+                            newPet.rarity = this.rarity
                             newPet.index = this.config.splits.index;
                             newPet.size = petal.size / this.config.splits.count * 3;
                             newPet.health.set(petal.health.health);
@@ -804,6 +858,30 @@ export class Entity {
                     thisDamageDone = thisDamageDone - other.armor
                     otherDamageDone = otherDamageDone - this.armor
 
+                    if (this.type === ENTITY_TYPES.PETAL && this.parent?.type === ENTITY_TYPES.PLAYER) {
+                        let velocity = this.velocity.magnitude;
+                        if (velocity > 4.5) {
+                            let critChance = 1 - Math.exp(-(velocity - 4.5) * .008);
+                            
+                            critChance = Math.min(critChance, .2351);
+                            if (Math.random() < critChance) {
+                                thisDamageDone *= 1.45;
+                            }
+                        }
+                    }
+                    
+                    if (other.type === ENTITY_TYPES.PETAL && other.parent?.type === ENTITY_TYPES.PLAYER) {
+                        let velocity = other.velocity.magnitude;
+                        if (velocity > 4.5) {
+                            let critChance = 1 - Math.exp(-(velocity - 4.5) * .008);
+                            
+                            critChance = Math.min(critChance, .2351);
+                            if (Math.random() < critChance) {
+                                otherDamageDone *= 1.45;
+                            }
+                        }
+                    }
+
                     if (this.extraDamage) if (other.health.ratio > this.extraDamage.minHp && other.health.ratio < this.extraDamage.maxHp) {
                         thisDamageDone += this.damage * this.extraDamage.multiplier;
                     }
@@ -872,8 +950,10 @@ export class Entity {
                         other.parent.health.health = Math.min(other.parent.health.maxHealth, other.parent.health.health + other.healBack * otherDamageDone);
                     }
 
-                    this.hit = 3;
-                    other.hit = 3;
+                    if (Number.isFinite(this.health?.health) && Number.isFinite(other.health?.health)) {
+                        this.hit = 3;
+                        other.hit = 3;
+                    }
 
                     if (this.type === ENTITY_TYPES.MOB && this.neutral) {
                         this.target = other.parent;
@@ -911,7 +991,19 @@ export class Entity {
                         }
                     }
 
-                    if (this.type === ENTITY_TYPES.PETAL && this.lightning !== null && this.lightning.chargesLeft > 0) {
+                    if (this.type === ENTITY_TYPES.PLAYER) {
+                        this.petalSlots.forEach((slot => {
+                            slot.petals.forEach((petal => {
+                                if (petal?.lightning?.lightningOnParentHit) {
+                                    new Lightning(this).define(petal.lightning.damage, petal.lightning.range, petal.lightning.bounces, petal.rarity).bounce();
+                                    petal.lightning.chargesLeft--;
+                                    petal.health.health = petal.health.maxHealth / petal.lightning.charges * petal.lightning.chargesLeft
+                                }
+                            }))
+                        }))
+                    }
+
+                    if (this.type === ENTITY_TYPES.PETAL && this.lightning !== null && this.lightning.chargesLeft > 0 && !this.lightning.lightningOnParentHit) {
                         new Lightning(this.parent).define(this.lightning.damage, this.lightning.range, this.lightning.bounces).bounce();
 
                         if (this.lightning.charges > 1) {
@@ -920,7 +1012,19 @@ export class Entity {
                         }
                     }
 
-                    if (other.type === ENTITY_TYPES.PETAL && other.lightning !== null && other.lightning.chargesLeft > 0) {
+                    if (other.type === ENTITY_TYPES.PLAYER) {
+                        other.petalSlots.forEach((slot => {
+                            slot.petals.forEach((petal => {
+                                if (petal?.lightning?.lightningOnParentHit) {
+                                    new Lightning(other).define(petal.lightning.damage, petal.lightning.range, petal.lightning.bounces, petal.rarity).bounce();
+                                    petal.lightning.chargesLeft--;
+                                    petal.health.health = petal.health.maxHealth / petal.lightning.charges * petal.lightning.chargesLeft
+                                }
+                            }))
+                        }))
+                    }
+
+                    if (other.type === ENTITY_TYPES.PETAL && other.lightning !== null && other.lightning.chargesLeft > 0 && !other.lightning.lightningOnParentHit) {
                         new Lightning(other.parent).define(other.lightning.damage, other.lightning.range, other.lightning.bounces).bounce();
 
                         if (other.lightning.charges > 1) {
@@ -978,6 +1082,10 @@ export class Entity {
                 const resolution = terrain.polygon.resolve(this.x, this.y, this.size);
                 this.x = resolution.x;
                 this.y = resolution.y;
+
+                if (this.config?.bumblebeeMovement) {
+                    this.movementAngle = Math.random() * Math.PI * 2;
+                }
 
                 collisionResponses.push(terrain);
             }
@@ -1086,7 +1194,7 @@ export class Entity {
         this.health.health = 0;
         state.entities.delete(this.id);
         if (state.isWaves) {
-            state.currentMobs = state.currentMobs.filter(m => m.id !== this.id);
+            state.aliveMobs = state.aliveMobs.filter(m => m.id !== this.id);
         }
     }
 }
@@ -1320,7 +1428,7 @@ export class Player extends Entity {
         this.type = ENTITY_TYPES.PLAYER;
         this.team = this.id;
 
-        this.health.set(125);
+        this.health.set(40);
 
         this.moveAngle = 0;
         this.moveStrength = 0;
@@ -1366,9 +1474,11 @@ export class Player extends Entity {
     initSlots(n) {
         if (n > this.petalSlots.length) {
             for (let i = this.petalSlots.length; i < n; i++) {
-                const slot = new PetalSlot(this, i);
-                slot.define(petalConfigs[0], 0);
-                this.petalSlots.push(slot);
+                if (this.client?.slots[i]) {
+                    const slot = new PetalSlot(this, i);
+                    slot.define(petalConfigs[0], 0);
+                    this.petalSlots.push(slot);
+                }
             }
         } else {
             for (let i = this.petalSlots.length - 1; i >= n; i--) {
@@ -1379,20 +1489,22 @@ export class Player extends Entity {
     }
 
     setSlot(slotIndex, petalIndex, rarity) {
-        this.petalSlots[slotIndex].destroy();
-        this.petalSlots[slotIndex].define(petalConfigs[petalIndex], rarity);
+        if (this.petalSlots[slotIndex]) {
+            this.petalSlots[slotIndex].destroy();
+            this.petalSlots[slotIndex].define(petalConfigs[petalIndex], rarity);
+        }
     }
 
     update() {
         if (this.health.isDead) {
             for (const slot of this.petalSlots) {
-                if (slot.config.tiers[slot.rarity].deathDefying > 0 && slot.petals.some(petal => petal && !petal.health.isDead)) {
-                    this.health.health = Math.min(slot.config.tiers[slot.rarity].deathDefying * this.health.maxHealth, this.health.maxHealth);
+                if (slot.config.tiers[slot.rarity].deathDefying?.duration > 0 && slot.petals.some(petal => petal && !petal.health.isDead)) {
+                    this.health.health = Math.min(slot.config.tiers[slot.rarity].deathDefying.health * this.health.maxHealth, this.health.maxHealth);
                     slot.petals.forEach(petal => petal?.destroy());
 
                     if (!this.health.invulnerable) {
                         this.health.invulnerable = true;
-                        setTimeout(() => this.health.invulnerable = false, 1500 + slot.rarity * 250);
+                        setTimeout(() => this.health.invulnerable = false, slot.config.tiers[slot.rarity].deathDefying.duration * 1000);
                     }
                     break;
                 }
@@ -1503,6 +1615,7 @@ export class Player extends Entity {
 
             this.client.talk(CLIENT_BOUND.DEATH, string);
             this.client.body = null;
+            state.alivePlayers = state.alivePlayers.filter(m => m.id !== this.client.id);
         }
     }
 }
@@ -1565,19 +1678,18 @@ class FakeClient {
                     this.secondarySlots.pop();
                 }
             }
-
-            if (this.body && !this.body.health.isDead) {
-                this.body.initSlots(slots);
-            }
+        }
+        if (this.body && !this.body.health.isDead) {
+            this.body.initSlots(slots);
         }
     }
 
     get healthAdjustement() {
-        return 100 + 3 * Math.pow(this.level, 1.3);
+        return 40 + 5 * Math.pow(this.level, 1.5);
     }
 
     get bodyDamageAdjustment() {
-        return 10 + 2 * Math.pow(this.level, 1.3);
+        return 5 + 1 * Math.pow(this.level, 1.5);
     }
 
     get highestRarity() {
@@ -1651,7 +1763,7 @@ export class AIPlayer extends Player {
 
         state.livingMobCount++;
         if (state.isWaves) {
-            state.currentMobs.push(this);
+            state.aliveMobs.push(this);
         }
     }
 
@@ -1692,7 +1804,7 @@ export class AIPlayer extends Player {
     destroy() {
         super.destroy();
         if (state.isWaves) {
-            state.currentMobs = state.currentMobs.filter(m => m.id !== this.id);
+            state.aliveMobs = state.aliveMobs.filter(m => m.id !== this.id);
         }
         state.livingMobCount--;
 
@@ -1893,7 +2005,7 @@ export class Mob extends Entity {
                 if (spawn.count > 4) {
                     for (let i = 0, n = Math.random() * 4 | 0; i < n; i++) {
                         setTimeout(() => {
-                            const rarity = Math.max(0, this.rarity - Math.random() * 2 | 0);
+                            const rarity = Math.max(0, this.rarity - (Math.random() * 2 | 0));
                             const mob = new Mob(sp(mobConfigs[spawn.index].tiers[rarity].size));
                             mob.define(mobConfigs[spawn.index], rarity);
                             mob.team = this.team;
@@ -1903,7 +2015,7 @@ export class Mob extends Entity {
 
                             if (state.isWaves) {
                                 state.maxMobs++;
-                                state.currentMobs.push(mob);
+                                state.aliveMobs.push(mob);
                             }
                         }, 64);
                     }
@@ -1918,7 +2030,7 @@ export class Mob extends Entity {
 
                     if (!!!spawn.minHealthRatio || this.health.ratio <= spawn.minHealthRatio) {
                         while (spawn.count > 0 && (spawn.minHealthRatio < 1 || this.health.ratio <= (spawn.count + 1) / spawn.maxCount)) {
-                            const rarity = Math.max(0, spawn.maxCount === 1 ? this.rarity : (this.rarity - Math.random() * 2 | 0));
+                            const rarity = spawn.maxCount === 1 ? this.rarity : Math.max(0, this.rarity - (Math.random() * 2 | 0));
                             const mob = new Mob(sp(mobConfigs[spawn.index].tiers[rarity].size));
                             mob.define(mobConfigs[spawn.index], rarity);
                             mob.aggressive = true;
@@ -1928,7 +2040,7 @@ export class Mob extends Entity {
 
                             if (state.isWaves) {
                                 state.maxMobs++;
-                                state.currentMobs.push(mob);
+                                state.aliveMobs.push(mob);
                             }
                         }
                     }
@@ -1950,7 +2062,16 @@ export class Mob extends Entity {
 
         if (config.segment) {
             const segmentID = Mob.segmentedLength++;
-            const count = 4 + this.rarity / 1.5 | 0;
+            let count = 3;
+            let chance = Math.max(0.1, 0.8 - (this.rarity / 9) * 0.31);
+            
+            for (let s = 0; s < 27; s++) {
+                if (Math.random() < chance) {
+                    count++;
+                } else {
+                    break;
+                }
+            }
             let last = this;
 
             this.segmentID = segmentID;
@@ -1971,7 +2092,7 @@ export class Mob extends Entity {
 
                 this.segmentBodies.push(segment)
                 if (state.isWaves && !segment.friendly) {
-                    state.currentMobs.push(segment)
+                    state.aliveMobs.push(segment)
                 }
                 last = segment;
             }
@@ -2002,7 +2123,7 @@ export class Mob extends Entity {
                     segment.facing = ang;
 
                     if (state.isWaves && !segment.friendly) {
-                        state.currentMobs.push(segment)
+                        state.aliveMobs.push(segment)
                     }
 
                     last = segment;
@@ -2143,7 +2264,7 @@ export class Mob extends Entity {
                 mob.team = this.team;
                 mob.friendly = this.friendly;
                 if (state.isWaves && !mob.friendly) {
-                    state.currentMobs.push(mob)
+                    state.aliveMobs.push(mob)
                 }
                 this.hatchable = null;
                 return;
@@ -2163,6 +2284,7 @@ export class Mob extends Entity {
             this.facing = atan2;
         } else if (this.speed > 0) {
             this.tick--;
+            if (this.tick2) this.tick2--;
 
             if (this.target?.health.ratio > 0) {
                 if (this.poopable !== null) {
@@ -2185,7 +2307,7 @@ export class Mob extends Entity {
 
                         if (state.isWaves) {
                             state.maxMobs++;
-                            state.currentMobs.push(poop);
+                            state.aliveMobs.push(poop);
                         }
                     }
                 }
@@ -2205,7 +2327,7 @@ export class Mob extends Entity {
                         this.extraTicker = 100 + Math.random() * 100;
                     }
                 }
-
+                
                 if (this.config.sandstormMovement) {
                     const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
                     const dist = quickDiff(this, this.target);
@@ -2284,16 +2406,57 @@ export class Mob extends Entity {
                         this.strafes.mTick++;
                     }
                 }
-
             } else if (this.movesInBursts) {
                 this.moveStrength *= .7;
+            } else if (this.config.centipedeMovement) {
+                if (this.parent.type === ENTITY_TYPES.PLAYER) {
+                    this.movementAngle = Math.atan2(this.parent.y - this.y, this.parent.x - this.x);
+                    this.moveStrength = quickDiff(this, this.parent) < this.size + this.parent.size * 2 ? 0 : this.speed;
+                } else {
+                    if (this.tick <= 0) {
+                        this.tick = 22.5 * 4;
+                        if (this.moveStrength !== this.speed / 5) {
+                            this.movementAngle = Math.random() * Math.PI * 2;
+                            this.moveStrength = this.speed / 5;
+                        }
+                        if (Math.random() > .5) {
+                            this.movementAngle += 1.2 * (Math.random() * .4 + .6)
+                        } else {
+                            this.movementAngle -= 1.2 * (Math.random() * .4 + .6)
+                        }
+                    }
+                }
+            } else if (this.config.desertCentipedeMovement) {
+                if (this.tick <= 0) {
+                    this.tick = 22.5 * .1;
+                    if (this.clockwise) {
+                        this.movementAngle -= .15;
+                    } else {
+                        this.movementAngle += .15;
+                    }
+                    if (!this.tick2 || this.tick2 <= 0) {
+                        this.tick2 = 22.5 * 4;
+                        this.movementAngle = Math.random() * Math.PI * 2;
+                        this.clockwise = Math.random() > .5
+                    }
+                    if (this.moveStrength !== this.speed) {
+                        this.movementAngle = Math.random() * Math.PI * 2;
+                        this.moveStrength = this.speed;
+                    }
+                }
+            } else if (this.config.bumblebeeMovement) {
+                if (this.tick <= 0) {
+                    this.tick = 22.5 * 6;
+                    this.movementAngle = Math.random() * Math.PI * 2;
+                    this.moveStrength = this.speed;
+                }
             } else {
                 if (this.parent.type === ENTITY_TYPES.PLAYER) {
                     this.movementAngle = Math.atan2(this.parent.y - this.y, this.parent.x - this.x);
                     this.moveStrength = quickDiff(this, this.parent) < this.size + this.parent.size * 2 ? 0 : this.speed;
                 } else {
                     if (this.tick <= 0) {
-                        this.tick = 25 + Math.random() * 100 | 0;
+                        this.tick = 22.5 * 4;
                         this.movementAngle = Math.random() * Math.PI * 2;
                         this.moveStrength = this.speed;
                     }
@@ -2303,7 +2466,11 @@ export class Mob extends Entity {
             }
 
             if (this.config.moveInSines) {
-                this.movementAngle += Math.sin(performance.now() / 120 + this.id) * .1 * this.velocity.magnitude;
+                if (this.config.bumblebeeMovement) {
+                    this.movementAngle += Math.sin(performance.now() / 120 + this.id) * .1 * (this.velocity.magnitude * .5);
+                } else {
+                    this.movementAngle += Math.sin(performance.now() / 120 + this.id) * .1 * this.velocity.magnitude;
+                }
             }
 
             this.velocity.x += Math.cos(this.movementAngle) * this.moveStrength;
@@ -2331,7 +2498,7 @@ export class Mob extends Entity {
                 this.facing = Math.atan2(targetY - this.y, targetX - this.x);
             }
 
-            if (this.target?.health.ratio > 0 && this.projectile.tick >= this.projectile.cooldown) {
+            if ((this.config.name === "Bumblebee" || this.target?.health.ratio > 0) && this.projectile.tick >= this.projectile.cooldown) {
                 this.projectile.tick = 0;
 
                 if (this.projectile.multiShot) {
@@ -2438,7 +2605,7 @@ export class Mob extends Entity {
                 const client = state.clients.get(damager.clientID);
 
                 if (client) {
-                    client.addXP(Math.random() * Math.pow(this.rarity + 1, 3));
+                    client.addXP((Math.random() * 0.3 + 0.7) * Math.pow(3, this.rarity + 1));
 
                     const output = [];
                     for (const drop of mobConfigs[this.index].drops) {
