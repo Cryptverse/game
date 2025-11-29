@@ -1,5 +1,5 @@
 import { canvas, gameScale, renderTerrain, renderTerrainForMap, SpookyOverlay } from "./canvas.js";
-import { Reader, Writer, SERVER_BOUND, CLIENT_BOUND, ENTITY_FLAGS, ENTITY_MODIFIER_FLAGS, decodeEverything, Drawing, DEV_CHEAT_IDS, PetalConfig, MobConfig, PetalTier, getTerrain, terrains, BIOME_TYPES, loadTerrains } from "./protocol.js";
+import { Reader, Writer, SERVER_BOUND, CLIENT_BOUND, ENTITY_FLAGS, ENTITY_MODIFIER_FLAGS, decodeEverything, Drawing, DEV_CHEAT_IDS, PetalConfig, MobConfig, PetalTier, getTerrain, terrains, BIOME_TYPES, loadTerrains, tiers } from "./protocol.js";
 import { StarfishData } from "./renders.js";
 import { joystick } from ".././index.js";
 import * as util from "./util.js";
@@ -539,7 +539,7 @@ export function createServer(name, gamemode, modded, isPrivate, biome) {
         const timeout = setTimeout(() => resolve({
             ok: false,
             error: "Timeout error"
-        }), 5000);
+        }), 10000);
 
         const socket = new WebSocket(`${util.SERVER_URL.replace("http", "ws")}/ws/lobby?gameName=${name}&isModded=${modded ? "yes" : "no"}&isPrivate=${isPrivate ? "yes" : "no"}&gamemode=${gamemode}&biome=${biomeInt}&analytics=${analyticalData}`);
         socket.binaryType = "arraybuffer";
@@ -791,16 +791,18 @@ export class ChatMessage {
                 break;
         }
 
-        this.y = 300;
+        this.y = canvas.height;
         this.ticker = 0;
 
         ChatMessage.messages.push(this);
+        ChatMessage.allMessages.push(this);
     }
 
     /**
      * @type {ChatMessage[]}
      */
     static messages = [];
+    static allMessages = [];
 
     static showInput = false;
     static element = document.getElementById("chatInput");
@@ -1278,12 +1280,23 @@ export class ClientSocket extends WebSocket {
                     }
 
                     for (let i = 0; i < count; i++) {
-                        state.slots[i] ??= { ratio: 1 };
-                        state.slots[i].index = reader.getUint8();
-                        state.slots[i].rarity = reader.getUint8();
-                        state.slots[i].realRatio = reader.getFloat32();
+                        const isNotNull = reader.getUint8() === 1;
+
+                        if (isNotNull) {
+                            state.slots[i] ??= { ratio: 1 };
+                            state.slots[i] ??= {};
+                            state.slots[i].index = reader.getUint8();
+                            state.slots[i].rarity = reader.getUint8();
+                            state.slots[i].realRatio = reader.getFloat32();
+                        } else {
+                            state.slots[i] ??= { ratio: 0 };
+                            state.slots[i] ??= {};
+                            state.slots[i].index = -1;
+                        }
                     }
-                } { // Secondary slots
+                }
+                
+                { // Secondary slots
                     const count = reader.getUint8();
 
                     if (count !== state.secondarySlots.length) {
@@ -1310,26 +1323,52 @@ export class ClientSocket extends WebSocket {
                     const maxMobs = reader.getUint16();
                 
                     const mobCount = reader.getUint16();
-                    const currentMobs = [];
+                    const aliveMobs = [];
                 
                     for (let i = 0; i < mobCount; i++) {
                         const index = reader.getUint8();
                         const rarity = reader.getUint8();
-                        currentMobs.push({index, rarity});
+                        aliveMobs.push({index, rarity});
                     }
                 
                     state.waveInfo = {
                         wave,
                         livingMobs,
                         maxMobs,
-                        currentMobs
+                        aliveMobs
                     };
                 } else {
                     state.waveInfo = null;
                 }
 
+                { // Players
+                    const count = reader.getUint8();
+                    const alivePlayers = [];
+
+                    for (let i = 0; i < count; i++) {
+                        const team = reader.getUint8();
+                        const highestRarity = reader.getUint8();
+                        const xp = reader.getFloat32() * 10000;
+                        const username = reader.getStringUTF8();
+                        alivePlayers.push({xp, username, team, highestRarity});
+                    }
+                    
+                    state.alivePlayers = alivePlayers
+                }
+
                 state.level = reader.getUint16();
                 state.levelProgressTarget = reader.getFloat32();
+                
+                tiers.forEach(tier => {
+                    const petCount = reader.getUint16();
+                    state.inventory ??= {}
+                    state.inventory[tier.name] = {};
+                    for (let i = 0; i < petCount; i++) {
+                        const petId = reader.getUint16();
+                        const count = reader.getUint16();
+                        state.inventory[tier.name][petId] = count;
+                    }
+                });
                 break;
             case CLIENT_BOUND.ROOM_UPDATE:
                 state.room.width = reader.getFloat32();
@@ -1442,11 +1481,12 @@ export class ClientSocket extends WebSocket {
                     const y = mouse.y - canvas.height / 2;
                     const angle = Math.atan2(y, x);
                     const dist = util.quickDiff({ x: 0, y: 0, }, { x, y });
+                    const deadzone = .1
 
                     writer.setFloat32(angle);
-                    writer.setFloat32(dist / canvas.width / 2);
+                    writer.setFloat32(Math.max(0, (dist / (canvas.width / 2)) - deadzone) / (1 - deadzone));
                 }
-                if (data === 0x80) {
+                if (data & 0x80) {
                     writer.setFloat32(joystick.angle);
                     writer.setFloat32(joystick.distance);
                 }
@@ -1457,7 +1497,8 @@ export class ClientSocket extends WebSocket {
                 writer.setUint8(drag.index);
                 writer.setUint8(drop.type);
                 writer.setUint8(drop.index);
-            } break;
+            }
+            break;
             case SERVER_BOUND.DEV_CHEAT: {
                 const type = Number.isInteger(data) ? data : data.id;
                 writer.setUint8(type);
@@ -1523,6 +1564,16 @@ export class ClientSocket extends WebSocket {
             case SERVER_BOUND.CHAT_MESSAGE:
                 writer.setStringUTF8(data);
                 break;
+            case SERVER_BOUND.INVENTORY_CHANGE_LOADOUT: {
+                const { drag, drop } = data; // { type, index }
+                writer.setUint8(drag.index);
+                writer.setUint8(drag.rarity);
+                writer.setUint8(drop.type);
+                writer.setUint8(drop.index);
+                writer.setUint8(drop.rarity);
+                writer.setUint8(drop.petalIndex);
+            }
+            break;
         }
 
         const output = writer.build();
