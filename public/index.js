@@ -385,7 +385,7 @@ function processInputs() {
     }
 }
 window.addEventListener("keydown", e => {
-    if (e.key === "Escape" || (e.key === "Enter" && !net.ChatMessage.showInput && !net.state.isDead)) {
+    if (e.key === "Enter" && !net.ChatMessage.showInput && !net.state.isDead) {
         net.ChatMessage.showInput = !net.ChatMessage.showInput;
 
         setTimeout(() => {
