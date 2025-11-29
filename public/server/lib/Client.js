@@ -1498,12 +1498,12 @@ export default class Client {
         writer.setUint16(this.level);
         writer.setFloat32(this.levelProgress);
         tiers.forEach(tier => {
-            const pets = this.inventory[tier.name];
-            const petIds = Object.keys(pets);
-            writer.setUint16(petIds.length);
-            petIds.forEach(petId => {
-                writer.setUint16(parseInt(petId));
-                writer.setUint16(pets[petId]);
+            const petals = this.inventory[tier.name];
+            const petalIds = Object.keys(petals);
+            writer.setUint16(petalIds.length);
+            petalIds.forEach(id => {
+                writer.setUint16(parseInt(id));
+                writer.setUint16(petals[id]);
             });
         });
 
