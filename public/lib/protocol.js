@@ -372,7 +372,7 @@ export class PetalConfig {
 
     setExtraVision(extraVision) {
         for (let i = 0; i < this.tiers.length; i++) {
-            this.tiers[i].extraVision = extraVision * Math.pow(1.5, i);
+            this.tiers[i].extraVision = extraVision * Math.pow(1.45, i);
         }
 
         return this;
@@ -553,6 +553,14 @@ export class PetalConfig {
 
         return this;
     }
+    setIcon(size, count, name) {
+        this.icon = {
+            size,
+            count,
+            name
+        }
+        return this;
+    }
 }
 
 export class MobDrop {
@@ -645,6 +653,21 @@ export class MobConfig {
         return this;
     }
 
+    setCentipedeMovement(centipedeMovement) {
+        this.centipedeMovement = Boolean(centipedeMovement);
+        return this;
+    }
+
+    setBumblebeeMovement(bumblebeeMovement) {
+        this.bumblebeeMovement = Boolean(bumblebeeMovement);
+        return this;
+    }
+
+    setDesertCentipedeMovement(desertCentipedeMovement) {
+        this.desertCentipedeMovement = Boolean(desertCentipedeMovement);
+        return this;
+    }
+
     setDamageReduction(damageReduction) {
         for (let i = 0; i < this.tiers.length; i++) {
             this.tiers[i].damageReduction = damageReduction * Math.pow(1.1, i);
@@ -680,8 +703,8 @@ export class MobConfig {
                 health: (projectile.health ?? 1) * Math.pow(PetalTier.HEALTH_SCALE, i),
                 damage: (projectile.damage ?? 1) * Math.pow(PetalTier.DAMAGE_SCALE, i),
                 speed: projectile.speed ?? 5,
-                range: (projectile.range ?? 50) * Math.pow(MobTier.SIZE_SCALE * 0.8, i),
-                size: projectile.size ?? 0.35,
+                range: (projectile.range ?? 50) * Math.pow(MobTier.SIZE_SCALE * .8, i),
+                size: projectile.size ?? .35,
                 multiShot: projectile.multiShot ?? null,
                 runs: projectile.runs ?? false,
                 nullCollision: projectile.nullCollision ?? false,
@@ -875,7 +898,8 @@ export const SERVER_BOUND = {
     CHANGE_LOADOUT: 0x03,
     DEV_CHEAT: 0x04,
     PING: 0x05,
-    CHAT_MESSAGE: 0x06
+    CHAT_MESSAGE: 0x06,
+    INVENTORY_CHANGE_LOADOUT: 0x07
 };
 
 export const DEV_CHEAT_IDS = {
@@ -1472,6 +1496,15 @@ export function encodePetalConfig(config) {
         output.push(config.splits.count);
     }
 
+    if (config.icon) {
+        output[flagsIndex] |= 0x80000000;
+        output.push(
+            config.icon.size,
+            config.icon.count,
+            config.icon.name
+        );
+    }
+
     return output.map(value => {
         if (Number.isFinite(value)) {
             return +value.toFixed(2);
@@ -1678,6 +1711,14 @@ export function decodePetalConfig(data, nTiers) {
 
     if (flags & 0x40000000) {
         output.splits = data.shift();
+    }
+
+    if (flags & 0x80000000) {
+        output.icon = {
+            size: data.shift(),
+            count: data.shift(),
+            name: data.shift()
+        }
     }
 
     return output;
