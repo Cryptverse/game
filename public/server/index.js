@@ -139,7 +139,7 @@ setInterval(() => {
             if (state.isWaves && state.livingMobCount <= 0) {
                 state.currentWave++;
                 state.maxMobs = Math.min(64, 6 + 2 * state.currentWave);
-                state.width = state.height = Math.min(1024 + 48 * 2 * state.currentWave, Math.pow(128, 2));
+                state.width = state.height = Math.min(1024 + 36 * 2.25 * state.currentWave, Math.pow(128, 2));
 
                 state.clients.forEach(client => client.sendRoom());
                 const mobIndexes = createWave(state.maxMobs);
@@ -148,15 +148,15 @@ setInterval(() => {
                     if (mobIndexes[i] === -1) {
                         new AIPlayer(
                             state.random(),
-                            Math.max(0, getWaveMobRarity(state.currentWave, 3.81 * Math.pow(1.012, state.currentWave), tiers.length - 1)),
+                            Math.max(0, getWaveMobRarity(state.currentWave, 4.83 * Math.pow(1.012, state.currentWave), tiers.length - 1)),
                             state.currentWave
                         );
                         continue;
                     }
 
                     const mob = new Mob(state.random());
-                    mob.define(mobConfigs[mobIndexes[i]], getWaveMobRarity(state.currentWave, 3.81 * Math.pow(1.012, state.currentWave), tiers.length - 1));
-                    state.currentMobs.push(mob);
+                    mob.define(mobConfigs[mobIndexes[i]], getWaveMobRarity(state.currentWave, 4.83 * Math.pow(1.012, state.currentWave), tiers.length - 1));
+                    state.aliveMobs.push(mob);
                 }
             }
         } break;
@@ -588,7 +588,8 @@ class ModdingAPI {
                     }
                 });
                 if (state.isWaves) {
-                    state.currentMobs.push(mob)
+                    state.aliveMobs.push(mob)
+                    state.maxMobs++
                 }
             } break;
             case "setRoomInfo":
