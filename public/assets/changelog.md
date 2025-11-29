@@ -33,6 +33,8 @@
 - Shield bar now show up in the level ui
 - You now have to press r instead of x to switch loadouts
 - You can now hold g to show the rarity of petals
+- You can now have special characters in your username
+- You can now press enter to chat instead of escape
 - Yggdrasil immunity stats are now editable
 - Wave progression has been significantly improved. Rarities now spawn much more randomly and unpredictably
 - Healing/shield petals like Rose and Shell can now heal nearby teammates
