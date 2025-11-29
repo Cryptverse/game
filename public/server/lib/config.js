@@ -13,7 +13,7 @@ export {
 export const petalConfigs = [
     new PetalConfig("Basic", 22.5 * 1, 10, 10)
         .setDescription("A simple petal. Not too strong, not too weak."),
-    new PetalConfig("Light", 22.5 * .25, 5, 17)
+    new PetalConfig("Light", 22.5 * .25, 6.5, 17)
         .setMulti([1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 7, 7], 0, true)
         .setSize(.75)
         .setDescription("It's very light and recharges quickly, at the cost of damage."),
@@ -21,7 +21,7 @@ export const petalConfigs = [
         .setSize(.75)
         .setExtraRadians(.03)
         .setDescription("This one makes your petals spin faster."),
-    new PetalConfig("Heavy", 22.5 * 2, 75, 2)
+    new PetalConfig("Heavy", 22.5 * 2, 100, 2.5)
         .setSize(1.25)
         .setDensity(3)
         .setDescription("A more chunky petal that hits harder but takes longer to recharge."),
@@ -63,7 +63,7 @@ export const petalConfigs = [
         .setExtraHealth(20)
         .setSize(1.5)
         .setDescription("A purely magical petal that heals you over time while simultaneously making you tougher."),
-    new PetalConfig("Corn", 22.5 * 5, 450, 2)
+    new PetalConfig("Corn", 22.5 * 5, 425, 2)
         .setSize(1.6)
         .setDescription("It's a piece of corn. They say ants like to snack on it."),
     new PetalConfig("Sand", 22.5 * .45, 5, 8)
@@ -73,7 +73,7 @@ export const petalConfigs = [
     new PetalConfig("Orange", 22.5 * .75, 12.5, 7.5)
         .setMulti(3, true)
         .setDescription("A bunch of oranges. They're pretty juicy."),
-    new PetalConfig("Missile", 22.5 * 1, 5, 18)
+    new PetalConfig("Missile", 22.5 * 1, 4, 18.5)
         .setLaunchable(.7, 45)
         .setSize(1.35)
         .setDescription("You can actually shoot this one!"),
@@ -121,7 +121,7 @@ export const petalConfigs = [
         .setHuddles(1)
         .setDescription("Something might pop out of this!"),
     new PetalConfig("Antennae", 0, 0, 0)
-        .setExtraVision(50)
+        .setExtraVision(150)
         .setMulti(0, false)
         .setWearable(WEARABLES.ANTENNAE)
         .setDescription("These feelers give you some extra vision."),
@@ -145,7 +145,7 @@ export const petalConfigs = [
     new PetalConfig("Primrose", 22.5 * 1, 12.5, 7.5)
         .setSize(1.3)
         .setHuddles(1)
-        .setHealSpit(77, 125, 3)
+        .setHealSpit(22.5 * 3, 125, 10)
         .setDescription("Said to be from a mystical covenant of witches who specialized in healing nature."),
     new PetalConfig("Fire Spellbook", 22.5 * 1.25, 15, 5)
         .setSize(1.2)
@@ -279,7 +279,7 @@ export const petalConfigs = [
         .setPhases(1)
         .setSize(1.34)
         .setLightning(4, 32 * 8, 5, [2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7], true)
-        .setDescription("A battery that can release electric charges when hit."),
+        .setDescription("A battery that can release electric charges when its parent is hit."),
     new PetalConfig("Dust", 22.5 * .75, 6, 7.5)
         .setMulti(3, true)
         .setLaunchable(.7, 55)
@@ -365,12 +365,12 @@ export const mobConfigs = [
         .addDrop(petalIDOf("Rose"), .6),
     new MobConfig("Rock", 75, 5, 27.5, 0)
         .addDrop(petalIDOf("Rock"))
-        .addDrop(petalIDOf("Heavy"), .5),
+        .addDrop(petalIDOf("Heavy"), .5, 2),
     new MobConfig("Bee", 15, 25, 25, 4)
         .setMoveInSines(1)
         .setNeutral(1)
-        .addDrop(petalIDOf("Stinger"))
-        .addDrop(petalIDOf("Pollen"), .6)
+        .addDrop(petalIDOf("Stinger"), .7)
+        .addDrop(petalIDOf("Pollen"))
         .addDrop(petalIDOf("Honey"), .4),
     new MobConfig("Spider", 20, 10, 20, 4)
         .setAggressive(1)
@@ -402,7 +402,7 @@ export const mobConfigs = [
         .addDrop(petalIDOf("Cactus"), .25),
     new MobConfig("Roach", 30, 5, 30, 5.5)
         .setNeutral(1)
-        .addDrop(petalIDOf("Antennae"))
+        .addDrop(petalIDOf("Antennae"), 1, 2)
         .addDrop(petalIDOf("Magnolia"), .6)
         .addDrop(petalIDOf("Bone"), .6),
     new MobConfig("Hornet", 35, 15, 30, 3)
@@ -416,8 +416,8 @@ export const mobConfigs = [
             range: 55
         })
         .addDrop(petalIDOf("Missile"))
-        .addDrop(petalIDOf("Antennae"), .5)
-        .addDrop(petalIDOf("Orange"), .8),
+        .addDrop(petalIDOf("Antennae"), 1, 2)
+        .addDrop(petalIDOf("Orange")),
     new MobConfig("Mantis", 35, 10, 32.5, 2)
         .setAggressive(1)
         .setProjectile({
@@ -434,8 +434,7 @@ export const mobConfigs = [
             }
         })
         .addDrop(petalIDOf("Peas"))
-        .addDrop(petalIDOf("Dahlia"), .5)
-        .addDrop(petalIDOf("Antennae"), .5),
+        .addDrop(petalIDOf("Antennae"), .5, 2),
     new MobConfig("Pupa", 40, 10, 30, 1)
         .setAggressive(1)
         .setProjectile({
@@ -454,7 +453,7 @@ export const mobConfigs = [
         })
         .addDrop(petalIDOf("Rock"))
         .addDrop(petalIDOf("Wing"))
-        .addDrop(petalIDOf("Heavy"), .5),
+        .addDrop(petalIDOf("Heavy"), .5, 2),
     new MobConfig("Sandstorm", 45, 15, 35, 3)
         .setSandstormMovement(1)
         .setSize(35, MobTier.SIZE_SCALE, .9, .25)
@@ -505,18 +504,18 @@ export const mobConfigs = [
         .addDrop(petalIDOf("Cactus"))
         .addDrop(petalIDOf("Stinger"), .8),
     new MobConfig("Baby Ant", 10, 5, 15, 2)
-        .addDrop(petalIDOf("Light"), .4)
-        .addDrop(petalIDOf("Faster"), .4)
-        .addDrop(petalIDOf("Rice"), .4),
+        .addDrop(petalIDOf("Light"), .5)
+        .addDrop(petalIDOf("Faster"), .5)
+        .addDrop(petalIDOf("Rice"), .5),
     new MobConfig("Worker Ant", 15, 5, 15, 3.25)
         .setNeutral(1)
-        .addDrop(petalIDOf("Light"), .4)
-        .addDrop(petalIDOf("Leaf"), .4)
-        .addDrop(petalIDOf("Corn"), .4),
+        .addDrop(petalIDOf("Light"), .5)
+        .addDrop(petalIDOf("Leaf"), .5)
+        .addDrop(petalIDOf("Corn"), .5),
     new MobConfig("Soldier Ant", 25, 5, 15, 3.5)
         .setAggressive(1)
-        .addDrop(petalIDOf("Faster"), .4)
-        .addDrop(petalIDOf("Wing"), .2),
+        .addDrop(petalIDOf("Faster"), .5)
+        .addDrop(petalIDOf("Wing"), .5),
     new MobConfig("Queen Ant", 100, 5, 25, 3.5)
         .setAggressive(1)
         .setPushability(0.8)
@@ -528,28 +527,27 @@ export const mobConfigs = [
         .addDrop(petalIDOf("Dirt"))
         .addDrop(petalIDOf("Ant Egg"), .5),
     new MobConfig("Baby Fire Ant", 10, 10, 15, 2)
-        .addDrop(petalIDOf("Light"), .4)
-        .addDrop(petalIDOf("Yucca"), .4),
+        .addDrop(petalIDOf("Light"), .5)
+        .addDrop(petalIDOf("Yucca"), .5),
     new MobConfig("Worker Fire Ant", 15, 10, 15, 3.25)
         .setNeutral(1)
-        .addDrop(petalIDOf("Light"), .4)
-        .addDrop(petalIDOf("Yucca"), .4)
-        .addDrop(petalIDOf("Corn"), .4),
+        .addDrop(petalIDOf("Light"), .5)
+        .addDrop(petalIDOf("Yucca"), .5),
     new MobConfig("Soldier Fire Ant", 25, 10, 15, 3.5)
         .setAggressive(1)
-        .addDrop(petalIDOf("Faster"), .4)
-        .addDrop(petalIDOf("Glass"), .2),
+        .addDrop(petalIDOf("Faster"), .5)
+        .addDrop(petalIDOf("Glass"), .5),
     new MobConfig("Queen Fire Ant", 100, 10, 25, 3.5)
         .setAggressive(1)
         .setPushability(0.8)
-        .addDrop(petalIDOf("Primrose"))
+        .addDrop(petalIDOf("Primrose"), .5)
         .addDrop(petalIDOf("Dirt"), .5)
         .addDrop(petalIDOf("Ant Egg"), .8),
     new MobConfig("Fire Ant Hole", 100, 2, 25, 0)
         .setPushability(0)
         .addDrop(petalIDOf("Dirt"))
         .addDrop(petalIDOf("Ant Egg"), .5)
-        .addDrop(petalIDOf("Magnet"), .4),
+        .addDrop(petalIDOf("Magnet"), .5, 2),
     new MobConfig("Baby Termite", 15, 5, 15, 2)
         .setDamageReduction(.1)
         .setDamageReflection(.05, .5)
@@ -573,8 +571,7 @@ export const mobConfigs = [
         .setDamageReduction(.1)
         .setDamageReflection(.05, .5)
         .addDrop(petalIDOf("Ant Egg"), .5)
-        .addDrop(petalIDOf("Amulet"), .4)
-        .addDrop(petalIDOf("Primrose"), .7),
+        .addDrop(petalIDOf("Amulet"), .4),
     new MobConfig("Termite Mound", 150, 1, 30, 0)
         .setDamageReduction(.1)
         .setPushability(0)
@@ -582,20 +579,13 @@ export const mobConfigs = [
         .addDrop(petalIDOf("Armor"), .75)
         .addDrop(petalIDOf("Magnet"), .5),
     new MobConfig("Ant Egg", 20, 1, 15, 0)
-        .addDrop(petalIDOf("Ant Egg"), .8)
-        .addDrop(petalIDOf("Dirt"), .1),
-    new MobConfig("Queen Ant Egg", 20, 1, 15, 0)
-        .addDrop(petalIDOf("Ant Egg"), .4)
-        .addDrop(petalIDOf("Dirt"), .1),
+        .addDrop(petalIDOf("Ant Egg")),
+    new MobConfig("Queen Ant Egg", 20, 1, 15, 0),
     new MobConfig("Fire Ant Egg", 20, 2, 15, 0)
-        .addDrop(petalIDOf("Ant Egg"), .8)
-        .addDrop(petalIDOf("Yucca"), .8),
-    new MobConfig("Queen Fire Ant Egg", 20, 2, 15, 0)
-        .addDrop(petalIDOf("Ant Egg"), .4)
-        .addDrop(petalIDOf("Yucca"), .4),
+        .addDrop(petalIDOf("Ant Egg")),
+    new MobConfig("Queen Fire Ant Egg", 20, 2, 15, 0),
     new MobConfig("Termite Egg", 30, 1, 15, 0)
-        .addDrop(petalIDOf("Ant Egg"), .8)
-        .addDrop(petalIDOf("Bone"), .8),
+        .addDrop(petalIDOf("Ant Egg")),
     new MobConfig("Evil Ladybug", 25, 15, 25, 2.5)
         .setAggressive(1)
         .setDamageReduction(.125)
@@ -611,31 +601,35 @@ export const mobConfigs = [
         .addDrop(petalIDOf("Dahlia"))
         .addDrop(petalIDOf("Yin Yang"), .15)
         .addDrop(petalIDOf("Third Eye"), .05, 3),
-    new MobConfig("Centipede", 25, 10, 22.5, 4)
+    new MobConfig("Centipede", 25, 10, 22.5, 3.5)
         .setNeutral(1)
+        .setCentipedeMovement(1)
         .addDrop(petalIDOf("Peas"), .5)
         .addDrop(petalIDOf("Leaf"), .5),
-    new MobConfig("Centipede", 25, 10, 22.5, 4)
+    new MobConfig("Centipede", 25, 10, 22.5, 3.5)
         .setSystem(1)
         .setNeutral(1)
+        .setCentipedeMovement(1)
         .addDrop(petalIDOf("Peas"), .5)
         .addDrop(petalIDOf("Leaf"), .5),
-    new MobConfig("Desert Centipede", 20, 10, 22.5, 4)
-        .setSandstormMovement(1)
+    new MobConfig("Desert Centipede", 20, 10, 22.5, 5)
+        .setDesertCentipedeMovement(1)
         .addDrop(petalIDOf("Powder"), .5)
         .addDrop(petalIDOf("Sand"), .5),
-    new MobConfig("Desert Centipede", 20, 10, 22.5, 4)
+    new MobConfig("Desert Centipede", 20, 10, 22.5, 5)
         .setSystem(1)
-        .setSandstormMovement(1)
+        .setDesertCentipedeMovement(1)
         .addDrop(petalIDOf("Powder"), .5)
         .addDrop(petalIDOf("Sand"), .5),
-    new MobConfig("Evil Centipede", 25, 10, 22.5, 4)
+    new MobConfig("Evil Centipede", 25, 10, 22.5, 3.5)
         .setAggressive(1)
+        .setCentipedeMovement(1)
         .addDrop(petalIDOf("Iris"), .5)
         .addDrop(petalIDOf("Grapes"), .5),
-    new MobConfig("Evil Centipede", 25, 10, 22.5, 4)
+    new MobConfig("Evil Centipede", 25, 10, 22.5, 3.5)
         .setSystem(1)
         .setAggressive(1)
+        .setCentipedeMovement(1)
         .addDrop(petalIDOf("Iris"), .5)
         .addDrop(petalIDOf("Grapes"), .5),
     new MobConfig("Dandelion", 25, 10, 22.5, 0)
@@ -644,7 +638,7 @@ export const mobConfigs = [
         .addDrop(petalIDOf("Pollen"), .5),
     new MobConfig("Sponge", 35, 3, 30, 0)
         .addDrop(petalIDOf("Sponge")),
-    new MobConfig("Bubble", .5, .5, 30, 0)
+    new MobConfig("Bubble", 1, 1, 30, 0)
         .addDrop(petalIDOf("Bubble"), .8)
         .addDrop(petalIDOf("Air"), .8),
     new MobConfig("Shell", 40, 10, 32.5, 25)
@@ -685,6 +679,7 @@ export const mobConfigs = [
         .addDrop(petalIDOf("Battery"), .4),
     new MobConfig("Bumblebee", 25, 15, 30, 5)
         .setMoveInSines(1)
+        .setBumblebeeMovement(1)
         .setProjectile({
             petalIndex: petalIDOf("Pollen"),
             cooldown: 22.5 * .5,
@@ -694,7 +689,7 @@ export const mobConfigs = [
             range: 90
         })
         .addDrop(petalIDOf("Pollen"))
-        .addDrop(petalIDOf("Honey"), .6),
+        .addDrop(petalIDOf("Honey")),
     new MobConfig("Moth", 25, 10, 25, 3)
         .setMoveInSines(1)
         .setNeutral(1)
@@ -709,11 +704,11 @@ export const mobConfigs = [
         .addDrop(petalIDOf("Faster"), .8)
         .addDrop(petalIDOf("Third Eye"), .02, 5),
     new MobConfig("Square", 50, 3.5, 30, 0)
-        .setSystem(1),
+        .addDrop(petalIDOf("Square Egg")),
     new MobConfig("Triangle", 100, 5.5, 32.5, 0)
-        .setSystem(1),
+        .addDrop(petalIDOf("Triangle Egg")),
     new MobConfig("Pentagon", 150, 7.5, 35, 0)
-        .setSystem(1),
+        .addDrop(petalIDOf("Pentagon Egg")),
     new MobConfig("Hell Beetle", 35, 15, 35, 4)
         .setAggressive(1)
         .setPushability(0.8)
@@ -751,10 +746,8 @@ export const mobConfigs = [
         })
         .setPushability(0.8)
         .addDrop(petalIDOf("Missile"))
-        .addDrop(petalIDOf("Antennae"), .5),
-    new MobConfig("Termite Overmind Egg", 20, 1, 15, 0)
-        .addDrop(petalIDOf("Ant Egg"), .4)
-        .addDrop(petalIDOf("Amulet"), .4),
+        .addDrop(petalIDOf("Antennae"), 1, 2),
+    new MobConfig("Termite Overmind Egg", 20, 1, 15, 0),
     new MobConfig("Spirit", 1e-15, 0, 35, 1)
         .setSpins(4, 1)
         .addDrop(petalIDOf("Candy"), .1),
@@ -775,7 +768,7 @@ export const mobConfigs = [
         })
         .addDrop(petalIDOf("Missile"))
         .setPushability(.8)
-        .addDrop(petalIDOf("Antennae"), .7)
+        .addDrop(petalIDOf("Antennae"), 1, 2)
         .addDrop(petalIDOf("Pollen"), .4),
     new MobConfig("Stickbug", 15, 4, 10, 6.5)
         .setAggressive(1)
@@ -788,15 +781,15 @@ export const mobConfigs = [
         .addDrop(petalIDOf("Iris"), .75)
         .addDrop(petalIDOf("Shrub"), .6)
         .addDrop(petalIDOf("Leaf")),
-    new MobConfig("Hell Centipede", 25, 10, 20, 4)
+    new MobConfig("Hell Centipede", 25, 10, 22.5, 4)
         .setAggressive(1)
-        .setSize(20, MobTier.SIZE_SCALE, .75, .25)
+        .setSize(22.5, MobTier.SIZE_SCALE, .75, .25)
         .addDrop(petalIDOf("Powder"), .5)
         .addDrop(petalIDOf("Dust"), .5),
-    new MobConfig("Hell Centipede", 25, 10, 20, 4)
+    new MobConfig("Hell Centipede", 25, 10, 22.5, 4)
         .setSystem(1)
         .setAggressive(1)
-        .setSize(20, MobTier.SIZE_SCALE, .75, .25)
+        .setSize(22.5, MobTier.SIZE_SCALE, .75, .25)
         .addDrop(petalIDOf("Powder"), .5)
         .addDrop(petalIDOf("Dust"), .5),
     new MobConfig("Wilt", 25, 10, 30, 0)
