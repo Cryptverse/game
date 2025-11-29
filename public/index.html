@@ -5,9 +5,10 @@
     <meta charset="UTF-8">
     <title>floof</title>
     <link rel="icon" href="./assets/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@700&display=swap" rel="stylesheet">
     <style>
         * {
-            font-family: ubuntu;
+            font-family: 'Ubuntu', sans-serif;
             font-weight: bold;
             transition: all .25s ease-in-out;
 
@@ -150,40 +151,50 @@
         }
 
         label {
-            margin: 1vmin 0;
+            margin: 8px 0;
             color: white;
             vertical-align: middle;
         }
 
         input[type=checkbox] {
-            width: 2vmin;
-            height: 2vmin;
+            width: 10px;
+            height: 10px;
             accent-color: rgba(85, 200, 119, 1);
             color: white;
             vertical-align: middle;
         }
 
         #menuContainer {
-            position: absolute;
-            top: 1.5vmin;
-            left: -65vmin;
+            position: fixed;
+            top: 5px;
+            left: 5px;
         }
 
         #menuContainer.active {
-            left: 1.5vmin;
+            left: 5px;
+        }
+
+        #buttonsContainer {
+            position: fixed;
+            bottom: 5px;
+            left: 5px;
+        }
+
+        #buttonsContainer.active {
+            left: 5px;
         }
 
         #topButtons {
             background-color: rgba(0, 0, 0, .15);
-            border-radius: 1vmin;
-            padding: 1.5vmin;
+            border-radius: 5px;
+            padding: 5px;
         }
 
         #topButtons button {
-            border-radius: .5vmin;
-            width: 5vmin;
-            height: 5vmin;
-            border: .5vmin solid black;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 4px solid black;
         }
 
         #topButtons button img {
@@ -201,31 +212,62 @@
         }
 
         #topButtons button img.alert {
-            width: 3vmin;
-            height: 3vmin;
+            width: 20px;
+            height: 20px;
+        }
+
+        #bottomButtons {
+            background-color: rgba(0, 0, 0, .15);
+            border-radius: 5px;
+            padding: 5px;
+        }
+
+        #bottomButtons button {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 4px solid black;
+        }
+
+        #bottomButtons button:hover {
+            filter: brightness(.9);
+        }
+
+        #bottomButtons button:active {
+            filter: brightness(.8);
+        }
+
+        #bottomButtons button img.alert {
+            width: 20px;
+            height: 20px;
         }
 
         #menus .menu {
-            position: absolute;
-            top: 9vmin;
-            left: -150vmin;
-            border-radius: .5vmin;
-            width: 32vmin;
-            height: 32vmin;
-            border: .5vmin solid black;
+            position: fixed;
+            top: 60px;
+            left: -700px;
+            border-radius: 5px;
+            width: 300px;
+            height: 380px;
+            border: 5px solid black;
             overflow-y: auto;
-            padding: 1vmin;
-            font-size: 1.65vmin;
+            padding: 10px;
+            font-size: 15px;
+            scrollbar-width: none;
+        }
+        
+        #menus .menu::-webkit-scrollbar {
+            display: none;
         }
 
         #menus .menu.active {
-            left: 0vmin;
-            top: 9vmin;
+            left: 5px;
+            top: 60px;
         }
 
         #menus .menu h2 {
             margin-top: 0;
-            font-size: 3vmin;
+            font-size: 25px;
         }
 
         #menus .menu label {
@@ -234,30 +276,19 @@
         }
 
         #menus .menu input[type=checkbox] {
-            width: 3vmin;
-            height: 3vmin;
+            width: 20px;
+            height: 20px;
             vertical-align: middle;
             accent-color: #EFEFEF;
         }
 
-        #closeButton.inactive {
-            position: absolute;
-            top: -100vmin;
-        }
-
-        #closeButton {
-            position: absolute;
-            left: 25.5vmin;
-            top: 1.5vmin;
-        }
-
         #menus .menu button {
             width: 100%;
-            padding: 1vmin;
+            padding: 10px;
             background-color: #88C8BA;
-            border-radius: .5vmin;
-            border: .5vmin solid #6CA094;
-            margin-top: 1vmin;
+            border-radius: 10px;
+            border: 10px solid #6CA094;
+            margin-top: 10px;
         }
 
         #menus .menu button:hover {
@@ -266,6 +297,81 @@
 
         #menus .menu button:active {
             filter: brightness(.8);
+        }
+
+        #menus2 .menu {
+            position: fixed;
+            bottom: -500px;
+            left: 60px;
+            border-radius: 5px;
+            width: 300px;
+            height: 350px;
+            border: 4px solid black;
+            overflow-y: auto;
+            padding: 10px;
+            font-size: 15px;
+            scrollbar-width: none;
+        }
+        
+        #menus2 .menu::-webkit-scrollbar {
+            display: none;
+        }
+
+        #menus2 .menu.active {
+            left: 60px;
+            bottom: 5px;
+        }
+
+        #menus2 .menu h2 {
+            margin-top: 0;
+            font-size: 3vmin;
+        }
+
+        #menus2 .menu label {
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        #menus2 .menu input[type=checkbox] {
+            width: 10px;
+            height: 10px;
+            vertical-align: middle;
+            accent-color: #EFEFEF;
+        }
+
+        #menus2 .menu button {
+            width: 100%;
+            padding: 1vmin;
+            background-color: #88C8BA;
+            border-radius: .5vmin;
+            border: .5vmin solid #6CA094;
+            margin-top: 1vmin;
+        }
+
+        #menus2 .menu button:hover {
+            filter: brightness(.9);
+        }
+
+        #menus2 .menu button:active {
+            filter: brightness(.8);
+        }
+
+        button {
+            outline: none;
+        }
+        button:focus {
+            outline: none;
+        }
+
+        #closeButton.inactive {
+            position: fixed;
+            top: -100px;
+        }
+
+        #closeButton {
+            position: fixed;
+            left: 192.5px;
+            top: 10px;
         }
 
         #accountTopPart {
@@ -317,11 +423,13 @@
 
         #chatInput {
             display: none;
-            position: absolute;
-            border-radius: .5vmin;
+            position: fixed;
+            bottom: 12px;
+            left: 60px;
+            border-radius: 5px;
             border: none;
-            background-color: rgba(0, 0, 0, .5);
-            color: white;
+            background-color: rgba(0, 0, 0, .4);
+            color: black;
             line-height: 1;
             padding: 0;
             margin: 0;
@@ -338,19 +446,19 @@
 
 <body oncontextmenu="return false;">
     <canvas></canvas>
-
+    
     <div id="menuContainer">
         <div id="topButtons">
-            <button id="optionsMenu"></button>
-            <button id="accountMenu"></button>
-            <button id="changelogMenu" style="position:relative;"></button>
-            <button id="discordButton"></button>
+            <button id="optionsMenu" tabindex="-1"></button>
+            <button id="accountMenu" tabindex="-1"></button>
+            <button id="changelogMenu" tabindex="-1" style="position:relative;"></button>
+            <button id="discordButton" tabindex="-1"></button>
 
             <button id="closeButton" class="inactive"></button>
         </div>
 
         <div id="menus">
-            <div class="menu" id="optionsMenu" style="height:38vmin">
+            <div class="menu" id="optionsMenu" style="height:380px">
                 <h2>Options:</h2>
                 <label for="show-debug">Show Debug Info:</label>
                 <input type="checkbox" id="show-debug" name="show-debug" value="show-debug"><br />
@@ -367,16 +475,22 @@
                 <label for="hide-entity-ui">Hide Entity UI:</label>
                 <input type="checkbox" id="hide-entity-ui" name="hide-entity-ui" value="hide-entity-ui"><br />
 
-                <label for="use-tile-background">Tiled Background:</label>
-                <input type="checkbox" id="use-tile-background" name="use-tile-background" value="use-tile-background"><br />
+                <label for="disable-tiled-background">Disable Tiled Background:</label>
+                <input type="checkbox" id="disable-tiled-background" name="disable-tiled-background" value="disable-tiled-background"><br />
 
                 <label for="extra-graphics">Fancy Graphics:</label>
                 <input type="checkbox" id="extra-graphics" name="extra-graphics" value="extra-graphics"><br />
 
                 <label for="show-hitboxes">Show Hitboxes:</label>
-                <input type="checkbox" id="show-hitboxes" name="show-hitboxes" value="show-hitboxes">
+                <input type="checkbox" id="show-hitboxes" name="show-hitboxes" value="show-hitboxes"><br />
+
+                <label for="cache-mob-assets">Cache Mob Assets:</label>
+                <input type="checkbox" id="cache-mob-assets" name="cache-mob-assets" value="cache-mob-assets"><br />
+
+                <label for="cache-petal-assets">Cache Petal Assets:</label>
+                <input type="checkbox" id="cache-petal-assets" name="cache-petal-assets" value="cache-petal-assets"><br />
             </div>
-            <div class="menu" id="accountMenu" style="height:38vmin">
+            <div class="menu" id="accountMenu" style="height:380px">
                 <!-- <div id="accountTopPart">
                     <span style="font-size: 3vmin" id="accountUsernameDisplay">???</span>
 
@@ -393,8 +507,20 @@
                 <button id="logoutButton">Log Out</button> -->
                 <span>Accounts are currently under construction</span>
             </div>
-            <div class="menu" id="changelogMenu" style="width: 42vmin;">
+            <div class="menu" id="changelogMenu" style="width:380px">
                 <h2>Changelogs:</h2>
+            </div>
+        </div>
+    </div>
+
+    <div id="buttonsContainer">
+        <div id="bottomButtons">
+            <button id="inventory" tabindex="-1"></button>
+        </div>
+
+        <div id="menus2">
+            <div class="menu" id="inventory">
+                <span>Your inventory is empty :(</span>
             </div>
         </div>
     </div>
