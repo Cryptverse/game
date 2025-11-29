@@ -1,4 +1,4 @@
-import { CLIENT_BOUND, ENTITY_TYPES, GAMEMODES, ROUTER_PACKET_TYPES, Writer } from "../../lib/protocol.js";
+import { CLIENT_BOUND, ENTITY_TYPES, GAMEMODES, ROUTER_PACKET_TYPES, Writer, tiers } from "../../lib/protocol.js";
 import { quickDiff } from "../../lib/util.js";
 import SpatialHashGrid from "./SpatialHashGrid.js";
 
@@ -311,7 +311,9 @@ const state = {
     maxMobs: 6,
 
     livingMobCount: 0,
-    currentMobs: [],
+    aliveMobs: [],
+    alivePlayers: [],
+    inventory: {},
 
     secretKey: crypto.getRandomValues(new Uint8Array(32)).join(""),
 
@@ -357,5 +359,9 @@ const state = {
 
     mobTable: null
 };
+
+tiers.forEach(tier => {
+    state.inventory[tier.name] = {};
+});
 
 export default state;
