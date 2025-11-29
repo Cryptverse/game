@@ -1,6 +1,6 @@
 import { state } from "./net.js";
 import { ctx as _ctx, drawWrappedText, mixColors, roundedRectangle, text } from "./canvas.js";
-import { formatLargeNumber, colors } from "./util.js";
+import { formatLargeNumber, colors, options } from "./util.js";
 import { Drawing, PetalConfig } from "./protocol.js";
 
 const TAU = Math.PI * 2;
@@ -487,7 +487,7 @@ function drawYinYang(ctx = _ctx, hit = false) {
 }
 
 function drawHoney(ctx = _ctx, hit = false) {
-    setStyle(ctx, mixColors(colors.honeyGold, "#FF0000", hit * .5), .225);
+    setStyle(ctx, mixColors(colors.honeyGold, "#FF0000", hit * .5), .25);
     polygon(ctx, 6, 1, 0);
     ctx.fill();
     ctx.stroke();
@@ -1657,7 +1657,39 @@ function drawClaw(ctx, hit) {
     ctx.closePath();
 }
 
+const petalCache = new Map();
+
 export function drawPetal(index, hit = false, ctx = _ctx, id = 0, size) {
+    if (options.cachePetalAssets) {
+        const key = `${index}`;
+        let cached = petalCache.get(key);
+        if (!cached) {
+            const img = document.createElement("canvas");
+            const _ctx = img.getContext("2d");
+
+            const baseSize = 256;
+            img.width = img.height = baseSize;
+            _ctx.translate(baseSize / 2, baseSize / 2);
+            _ctx.scale(baseSize / 6, baseSize / 6);
+
+            _ctx.save();
+            _ctx.lineCap = "round";
+            _ctx.lineJoin = "round";
+            
+            petalRender(index, hit, _ctx, id, size);
+            _ctx.restore();
+
+            cached = img;
+            petalCache.set(key, cached);
+        }
+        const drawSize = 6;
+        ctx.drawImage(cached, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+        return;
+    }
+    petalRender(index, hit, ctx, id, size);
+}
+
+function petalRender(index, hit, ctx, id, size) {
     if (state.petalConfigs[index].drawing) {
         const actions = state.petalConfigs[index].drawing.actions;
         for (const action of actions) {
@@ -1786,7 +1818,7 @@ export function drawPetal(index, hit = false, ctx = _ctx, id = 0, size) {
 
         return;
     }
-
+    
     switch (index) {
         case 0: // Basic
         case 1: // Light
@@ -2142,7 +2174,30 @@ export function drawUIPetal(index, rarity, ctx = _ctx) {
             ctx.restore();
             break;
         default:
-            drawPetal(index, false, ctx);
+            if (state.petalConfigs[index].icon) {
+                let count = state.petalConfigs[index].icon.count;
+                let size = state.petalConfigs[index].icon.size;
+                if (count > 1) {
+                    for (let i = 0; i < count; i++) {
+                        const angle = TAU / count * i;
+                
+                        ctx.save();
+                        ctx.translate(Math.cos(angle) * .775, Math.sin(angle) * .775);
+                        ctx.scale(size * .85, size * .85);
+                        ctx.rotate(angle)
+                        drawPetal(index, false, ctx);
+                        ctx.restore();
+                    }
+                } else {
+                    ctx.save();
+                    ctx.scale(size, size);
+                    drawPetal(index, false, ctx);
+                    ctx.restore();
+                }
+            } else {
+                drawPetal(index, false, ctx);
+            }
+            break;
     }
 }
 
@@ -2157,7 +2212,7 @@ function getUIPetalName(index) {
         case 67:
             return "Eggs";
         default:
-            return state.petalConfigs[index].name;
+            return state.petalConfigs[index].icon?.name ?? state.petalConfigs[index].name;
     }
 }
 
@@ -2193,7 +2248,7 @@ function createPetalIcon(index, rarity) {
         k = 0;
 
     while (true) {
-        ctx.font = `bold ${size}px ubuntu`;
+        ctx.font = `bold ${size}px Ubuntu`;
 
         if (ctx.measureText(petalText).width < 96 || k++ > 512) {
             break;
@@ -2235,7 +2290,7 @@ function measureText(text, max) {
         k = 0;
 
     while (true) {
-        measuringCtx.font = `bold ${size}px ubuntu`;
+        measuringCtx.font = `bold ${size}px Ubuntu`;
 
         if (measuringCtx.measureText(text).width < max || k++ > 512) {
             break;
@@ -2283,7 +2338,6 @@ export function drawPetalIconWithRatio(index, rarity, x, y, size, ratio, ctx = _
 
     ctx.restore();
 }
-
 function drawLadybug(id, color, hit = false, ctx = _ctx, index, rarity) {
     const myColor = mixColors(color, "#FF0000", hit * .5);
     const black = mixColors(colors.stingerBlack, "#FF0000", hit * .5);
@@ -2656,8 +2710,8 @@ function drawHornet(id, color, altColor, hit = false, ctx = _ctx, date) {
 }
 
 function drawMantis(id, color, attack = false, hit = false, ctx = _ctx, date) {
-    const black = mixColors(colors.lighterBlack, "#FF0000", hit * .5);
-    setStyle(ctx, black, .125);
+    const black = mixColors(colors.stingerBlack, "#FF0000", hit * .5);
+    setStyle(ctx, black, .125, 0);
 
     // Legs
     ctx.beginPath();
@@ -2690,7 +2744,7 @@ function drawMantis(id, color, attack = false, hit = false, ctx = _ctx, date) {
     ctx.quadraticCurveTo(-.3, -.35, 0, -.4);
     ctx.stroke();
 
-    setStyle(ctx, black, .125);
+    setStyle(ctx, black, .125, 0);
     ctx.beginPath();
     ctx.moveTo(.85, .16);
     ctx.quadraticCurveTo(1.36, .18, 1.68, .49);
@@ -2948,8 +3002,8 @@ const cactusSides = [7, 9, 12, 16, 24, 28, 32, 32, 32, 38, 38, 40];
 function drawCactusMob(rarity, color, hit = false, ctx = _ctx) {
     const sides = cactusSides[rarity] ?? 46;
 
-    const spikeCenter = .925;
-    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .1);
+    const spikeCenter = .965;
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .08, 0);
     ctx.beginPath();
 
     for (let i = 0; i < sides; i++) {
@@ -2971,7 +3025,7 @@ function drawCactusMob(rarity, color, hit = false, ctx = _ctx) {
     ctx.fill();
     ctx.stroke();
 
-    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .1);
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .125);
     dipPolygon(ctx, sides, 1, 6.5 * (sides / 24), 0);
     ctx.fill();
     ctx.stroke();
@@ -3253,7 +3307,7 @@ function drawTermiteOvermind(id, color, attk = false, hit = false, ctx = _ctx, d
 
 
 function drawCentipedeSegment(color, hit = false, ctx = _ctx) {
-    setStyle(ctx, mixColors(colors.lighterBlack, "#FF0000", hit * .5), .2);
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .2, 0);
     ctx.beginPath();
     ctx.arc(0, -.875, .375, 0, TAU);
     ctx.arc(0, .875, .375, 0, TAU);
@@ -3285,7 +3339,7 @@ function drawCentipedeHead(id, color, hit = false, ctx = _ctx, date) {
 }
 
 function drawDandelionCore(ctx = _ctx, hit = false) {
-    setStyle(ctx, mixColors(colors.white, "#FF0000", hit * .5), .125);
+    setStyle(ctx, mixColors(colors.white, "#FF0000", hit * .5), .15);
 
     ctx.beginPath();
     ctx.arc(0, 0, 1, 0, TAU);
@@ -4251,7 +4305,39 @@ function drawDiepTank(ctx = _ctx, hit = false) {
     ctx.stroke();
 }
 
+const mobCache = new Map();
+
 export function drawMob(id, index, rarity, hit = false, ctx = _ctx, attack = false, friend = false, rot = 0, extra = undefined, date = performance.now()) {
+    if (options.cacheMobAssets) {
+        const key = `${index}-${rarity}-${friend}`;
+        let cached = mobCache.get(key);
+        if (!cached) {
+            const img = document.createElement("canvas");
+            const _ctx = img.getContext("2d");
+
+            const baseSize = 325;
+            img.width = img.height = baseSize;
+            _ctx.translate(baseSize / 2, baseSize / 2);
+            _ctx.scale(baseSize / 6, baseSize / 6);
+
+            _ctx.save();
+            _ctx.lineCap = "round";
+            _ctx.lineJoin = "round";
+            
+            mobRender(_ctx, id, index, rarity, hit, attack, friend, rot, extra, date);
+            _ctx.restore();
+
+            cached = img;
+            mobCache.set(key, cached);
+        }
+        const drawSize = 6;
+        ctx.drawImage(cached, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+        return;
+    }
+    mobRender(ctx, id, index, rarity, hit, attack, friend, rot, extra, date);
+}
+
+function mobRender(ctx, id, index, rarity, hit, attack, friend, rot, extra, date = performance.now()) {
     if (state.mobConfigs[index].drawing) {
         const actions = state.mobConfigs[index].drawing.actions;
         for (const action of actions) {
@@ -4380,7 +4466,7 @@ export function drawMob(id, index, rarity, hit = false, ctx = _ctx, attack = fal
 
         return;
     }
-    
+
     switch (index) {
         case 0:
             drawLadybug(id, friend ? colors.playerYellow : colors.ladybugRed, hit, ctx, index, rarity);
@@ -4601,18 +4687,46 @@ export function drawMob(id, index, rarity, hit = false, ctx = _ctx, attack = fal
     }
 }
 
+const UIMobCache = new Map();
+
 export function drawUIMob(index, rarity, ctx = _ctx) {
-    switch (index) {
-        case 48:
-            drawStarfishRender(false, ctx);
-            break;
-        case 49:
-            drawLeechRender(ctx);
-            break;
-        default:
-            drawMob(0, index, rarity, false, ctx, false, false, 0, undefined, 1);
-            break;
+    const key = `${index}-${rarity}`;
+    let cached = UIMobCache.get(key);
+
+    if (!cached) {
+        const img = document.createElement("canvas");
+        const _ctx = img.getContext("2d");
+
+        const baseSize = 256;
+        img.width = img.height = baseSize;
+
+        _ctx.translate(baseSize / 2, baseSize / 2);
+        _ctx.scale(baseSize / 7, baseSize / 7); // smaller scale = zooms out a bit
+
+        _ctx.save();
+        _ctx.lineCap = "round";
+        _ctx.lineJoin = "round";
+
+        switch (index) {
+            case 48:
+                drawStarfishRender(false, _ctx);
+                break;
+            case 49:
+                drawLeechRender(_ctx);
+                break;
+            default:
+                drawMob(0, index, rarity, false, _ctx, false, false, 0, undefined, 0);
+                break;
+        }
+
+        _ctx.restore();
+
+        cached = img;
+        UIMobCache.set(key, cached);
     }
+
+    const size = 7;
+    ctx.drawImage(cached, -size / 2, -size / 2, size, size);
 }
 function formatNegativeOrPositive(number, type = 1) {
     if (type === 1) {
