@@ -4701,7 +4701,7 @@ export function drawUIMob(index, rarity, ctx = _ctx) {
         img.width = img.height = baseSize;
 
         _ctx.translate(baseSize / 2, baseSize / 2);
-        _ctx.scale(baseSize / 7, baseSize / 7); // smaller scale = zooms out a bit
+        _ctx.scale(baseSize / 7, baseSize / 7);
 
         _ctx.save();
         _ctx.lineCap = "round";
