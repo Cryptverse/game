@@ -750,7 +750,6 @@ export default class Client {
         this.secondarySlots = new Array(5).fill(null).map(() => null);
         this.level = 1;
         this.xp = 1;
-        this.levelProgress = 0;
 
         this.lastChat = 0;
         this.frownyMessages = 0;
@@ -804,17 +803,17 @@ export default class Client {
     }
 
     get healthAdjustement() {
-        return 150 + 5 * Math.pow(this.level, 1.3);
+        return 40 + 5 * Math.pow(this.level, 1.5);
     }
 
     get bodyDamageAdjustment() {
-        return 12 + 2.5 * Math.pow(this.level, 1.325);
+        return 5 + 1 * Math.pow(this.level, 1.5);
     }
 
     get highestRarity() {
         let highest = 0;
         for (const slot of this.slots) {
-            if (slot.rarity > highest) {
+            if (slot && slot.rarity > highest) {
                 highest = slot.rarity;
             }
         }
@@ -839,8 +838,12 @@ export default class Client {
                 return true;
             }
         }
-
-        return false;
+        const rarity = tiers[drop.rarity].name;
+        if (!this.inventory[rarity][drop.index]) {
+          this.inventory[rarity][drop.index] = 0;
+        }
+        this.inventory[rarity][drop.index] += 1;
+        return true;
     }
 
     /**
@@ -869,6 +872,10 @@ export default class Client {
                 this.talk(CLIENT_BOUND.READY);
                 this.sendRoom();
                 state.sendTerrain(this.id);
+                this.inventory = {};
+                tiers.forEach(tier => {
+                  this.inventory[tier.name] = {};
+                });
 
                 if (this.uuid === state.secretKey && this.masterPermissions < 1) {
                     this.nameColor = "#F5D230";
@@ -882,6 +889,7 @@ export default class Client {
                     this.slots = dc.slots;
                     this.secondarySlots = dc.secondarySlots;
                     this.team = dc.team;
+                    this.inventory = dc.inventory;
                     this.addXP(0);
 
                     if (dc.body) {
@@ -911,10 +919,13 @@ export default class Client {
                 this.body.client = this;
                 this.body.health.set(this.healthAdjustement);
                 this.body.damage = this.bodyDamageAdjustment;
+                this.addXP(0)
 
                 this.body.initSlots(this.slots.length);
                 for (let i = 0; i < this.slots.length; i++) {
-                    this.body.setSlot(i, this.slots[i].id, this.slots[i].rarity);
+                    if (this.slots[i]) {
+                        this.body.setSlot(i, this.slots[i].id, this.slots[i].rarity);
+                    }
                 }
 
                 this.body.spawnInvincibility = true
@@ -928,6 +939,7 @@ export default class Client {
                 if (state.isTDM) {
                     this.body.team = -this.team;
                 }
+                state.alivePlayers.push(this);
                 break;
             case SERVER_BOUND.INPUTS: {
                 if (!this.verified) {
@@ -995,11 +1007,13 @@ export default class Client {
                                 this.slots[moveeIndex] = this.slots[moverIndex];
                                 this.slots[moverIndex] = temp;
 
-                                this.body.setSlot(moveeIndex, this.slots[moveeIndex].id, this.slots[moveeIndex].rarity);
+                                if (this.slots[moveeIndex]) {
+                                    this.body.setSlot(moveeIndex, this.slots[moveeIndex].id, this.slots[moveeIndex].rarity);
+                                }
                                 this.body.setSlot(moverIndex, this.slots[moverIndex].id, this.slots[moverIndex].rarity);
                                 break;
                             case 1: // Secondary slots
-                                if (moverIndex < 0 || moverIndex >= this.secondarySlots.length || this.secondarySlots[moverIndex] === null) {
+                                if (moverIndex < 0 || moverIndex >= this.secondarySlots.length) {
                                     return;
                                 }
 
@@ -1007,7 +1021,9 @@ export default class Client {
                                 this.slots[moveeIndex] = this.secondarySlots[moverIndex];
                                 this.secondarySlots[moverIndex] = temp2;
 
-                                this.body.setSlot(moveeIndex, this.slots[moveeIndex].id, this.slots[moveeIndex].rarity);
+                                if (this.slots[moveeIndex]) {
+                                    this.body.setSlot(moveeIndex, this.slots[moveeIndex].id, this.slots[moveeIndex].rarity);
+                                }
                                 break;
                         }
                         break;
@@ -1037,14 +1053,84 @@ export default class Client {
                                 this.secondarySlots[moveeIndex] = this.secondarySlots[moverIndex];
                                 this.secondarySlots[moverIndex] = temp2;
                                 break;
-                            case 2: // Destroy
+                            /* case 2: // Destroy
                                 this.addXP(Math.pow(this.secondarySlots[moveeIndex].rarity + 1, 2) * 2);
                                 this.secondarySlots[moveeIndex] = null;
                                 break;
+                            */
                         }
-                        break
+                        break;
                 }
-            } break;
+            }
+            if (this.body) {
+                this.body.initSlots(this.slots.length)
+            }
+            break;
+            case SERVER_BOUND.INVENTORY_CHANGE_LOADOUT: {
+                if (!this.verified) {
+                    this.kick("Not verified");
+                    return;
+                }
+
+                if (!this.body || this.body.health.isDead) {
+                    return;
+                }
+
+                let moveeIndex = reader.getUint8();
+                let moveeRarity = reader.getUint8();
+                let moverType = reader.getUint8();
+                let moverIndex = reader.getUint8();
+                let moverRarity = reader.getUint8();
+                let moverPetalIndex = reader.getUint8();
+
+                let inventoryRarity = tiers[moverRarity]?.name
+                
+                switch (moverType) {
+                    case 0: // Slots
+                        if (!this.inventory[inventoryRarity][moverPetalIndex]) {
+                            this.inventory[inventoryRarity][moverPetalIndex] = 0;
+                        }
+                        this.inventory[inventoryRarity][moverPetalIndex] += 1;
+
+                        this.slots[moverIndex].id = moveeIndex;
+                        this.slots[moverIndex].rarity = moveeRarity;
+                        this.body.setSlot(moverIndex, this.slots[moverIndex].id, this.slots[moverIndex].rarity);
+                        
+                        this.inventory[tiers[moveeRarity].name][moveeIndex]--;
+                        break;
+                    case 1: // Secondary slots
+                        if (moverPetalIndex === 255) {
+                            this.secondarySlots[moverIndex] = {
+                                id: moveeIndex,
+                                rarity: moveeRarity
+                            };
+                            this.inventory[tiers[moveeRarity].name][moveeIndex]--;
+                            break;
+                        }
+                        if (!this.inventory[inventoryRarity][moverPetalIndex]) {
+                            this.inventory[inventoryRarity][moverPetalIndex] = 0;
+                        }
+                        this.inventory[inventoryRarity][moverPetalIndex] += 1;
+                        
+                        this.secondarySlots[moverIndex].id = moveeIndex;
+                        this.secondarySlots[moverIndex].rarity = moveeRarity;
+                        
+                        this.inventory[tiers[moveeRarity].name][moveeIndex]--;
+                        break;
+                    case 2: // Secondary slot into inventory
+                        moverPetalIndex = this.secondarySlots[moverIndex].id;
+                        inventoryRarity = tiers[this.secondarySlots[moverIndex].rarity]?.name
+                        
+                        if (!this.inventory[inventoryRarity][moverPetalIndex]) {
+                            this.inventory[inventoryRarity][moverPetalIndex] = 0;
+                        }
+                        this.inventory[inventoryRarity][moverPetalIndex] += 1;
+                        
+                        this.secondarySlots[moverIndex] = null;
+                        break;
+                }
+            }
+            break;
             case SERVER_BOUND.DEV_CHEAT: {
                 if (!this.verified) {
                     this.kick("Not verified");
@@ -1242,7 +1328,7 @@ export default class Client {
                     return;
                 }
 
-                if (performance.now() - this.lastChat < 1000) {
+                if (performance.now() - this.lastChat < 500) {
                     this.systemMessage("You're chatting too fast.", "#22CACA");
                     return;
                 }
@@ -1313,6 +1399,7 @@ export default class Client {
                 new Disconnect(this);
             } else if (this.body) {
                 this.body.destroy();
+                state.alivePlayers = state.alivePlayers.filter(m => m.id !== this.id);
             }
         } else {
             console.log(`Client ${this.id} disconnected`);
@@ -1365,9 +1452,13 @@ export default class Client {
         writer.setUint8(this.slots.length);
         for (let i = 0; i < this.slots.length; i++) {
             const slot = this.slots[i];
-            writer.setUint8(slot.id);
-            writer.setUint8(slot.rarity);
-            writer.setFloat32(this.slotRatios[i] ?? 0);
+            writer.setUint8(slot ? 1 : 0);
+
+            if (slot) {
+                writer.setUint8(slot.id);
+                writer.setUint8(slot.rarity);
+                writer.setFloat32(this.slotRatios[i] ?? 0);
+            }
         }
 
         writer.setUint8(this.secondarySlots.length);
@@ -1386,9 +1477,9 @@ export default class Client {
             writer.setUint16(state.currentWave);
             writer.setUint16(state.livingMobCount);
             writer.setUint16(state.maxMobs);
-            writer.setUint16(state.currentMobs.length);
+            writer.setUint16(state.aliveMobs.length);
         
-            for (const entity of state.currentMobs) {
+            for (const entity of state.aliveMobs) {
                 writer.setUint8(entity.index);
                 writer.setUint8(entity.rarity);
             }
@@ -1396,8 +1487,25 @@ export default class Client {
             writer.setUint8(0);
         }
 
+        writer.setUint8(state.alivePlayers.length);
+        for (const entity of state.alivePlayers) {
+            writer.setUint8(entity.team);
+            writer.setUint8(entity.highestRarity);
+            writer.setFloat32(entity.xp / 10000);
+            writer.setStringUTF8(entity.username);
+        }
+
         writer.setUint16(this.level);
         writer.setFloat32(this.levelProgress);
+        tiers.forEach(tier => {
+            const pets = this.inventory[tier.name];
+            const petIds = Object.keys(pets);
+            writer.setUint16(petIds.length);
+            petIds.forEach(petId => {
+                writer.setUint16(parseInt(petId));
+                writer.setUint16(pets[petId]);
+            });
+        });
 
         state.router.postMessage(writer.build());
     }
