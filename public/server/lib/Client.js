@@ -860,7 +860,7 @@ export default class Client {
                     return;
                 }
 
-                this.username = reader.getStringUTF8().replace(/[^a-zA-Z0-9_\-]/g, "");
+                this.username = reader.getStringUTF8();
                 const lowercase = this.username.toLowerCase();
                 if (this.username.length > 24 || tripsFilter(lowercase)) {
                     this.kick("Invalid username");
