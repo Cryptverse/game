@@ -1,4 +1,5 @@
-export const SERVER_URL = location.protocol + "//" + ((location.hostname === "localhost" || location.hostname.startsWith("178.79.")) ? location.hostname + ":80" : "routing.floof.supercord.lol");//"floof-router.glitch.me");
+// export const SERVER_URL = location.protocol + "//" + ((location.hostname === "localhost" || location.hostname.startsWith("178.79.")) ? location.hostname + ":80" : "routing.floof.supercord.lol");//"floof-router.glitch.me");
+export const SERVER_URL = "https://routing.floof.supercord.lol"
 export function lerp(a, b, t) {
     return a + (b - a) * t;
 }
@@ -93,18 +94,32 @@ export const colors = {
     crabBodyOrange: "#dc704b",
     crabLimbBrown: "#4d2621"
 };
-export function formatLargeNumber(number) {
+export function formatLargeNumber(number, type = 0) {
     let returnedNumber = number;
-    if (number >= 1e15) {
-        returnedNumber = (number / 1e15).toFixed(2) + "q";
-    } else if (number >= 1e12) {
-        returnedNumber = (number / 1e12).toFixed(2) + "t";
-    } else if (number >= 1e9) {
-        returnedNumber = (number / 1e9).toFixed(2) + "b";
-    } else if (number >= 1e6) {
-        returnedNumber = (number / 1e6).toFixed(2) + "m";
-    } else if (number >= 1e3) {
-        returnedNumber = (number / 1e3).toFixed(2) + "k";
+    if (type === 1) {
+        if (number >= 1e15) {
+            returnedNumber = (number / 1e15).toFixed(1) + "q";
+        } else if (number >= 1e12) {
+            returnedNumber = (number / 1e12).toFixed(2) + "t";
+        } else if (number >= 1e9) {
+            returnedNumber = (number / 1e9).toFixed(2) + "b";
+        } else if (number >= 1e6) {
+            returnedNumber = (number / 1e6).toFixed(2) + "m";
+        } else if (number >= 1e3) {
+            returnedNumber = (number / 1e3).toFixed(1) + "k";
+        }
+    } else {
+        if (number >= 1e15) {
+            returnedNumber = (number / 1e15).toFixed(2) + "q";
+        } else if (number >= 1e12) {
+            returnedNumber = (number / 1e12).toFixed(2) + "t";
+        } else if (number >= 1e9) {
+            returnedNumber = (number / 1e9).toFixed(2) + "b";
+        } else if (number >= 1e6) {
+            returnedNumber = (number / 1e6).toFixed(2) + "m";
+        } else if (number >= 1e3) {
+            returnedNumber = (number / 1e3).toFixed(2) + "k";
+        }
     }
     return returnedNumber;
 }
@@ -140,27 +155,21 @@ export function getWaveMobRarity(wave, scaling, raritiesLength) {
         mobRarity++
     }
 
-    if (Math.random() < 0.068) {
+    if (Math.random() < .082) {
         mobRarity++
-        if (Math.random() < 0.031) {
+        if (Math.random() < .023) {
             mobRarity++
-            if (Math.random() < 0.009) {
-                mobRarity++
-            }
         }
     }
 
-    if (Math.random() < 0.059) {
+    if (Math.random() < .091) {
         mobRarity--
-        if (Math.random() < 0.085) {
-            mobRarity--
-            if (Math.random() < 0.053) {
-                mobRarity--
-                if (Math.random() < 0.019) {
-                    mobRarity--
-                }
-            }
-        }
+    }
+    if (Math.random() < .074) {
+        mobRarity--
+    }
+    if (Math.random() < .025) {
+        mobRarity--
     }
     
     return Math.min(raritiesLength, Math.max(0, mobRarity));
@@ -200,7 +209,8 @@ export const options = {
     hideEntityUI: false,
     useTileBackground: false,
     fancyGraphics: false,
-    showHitboxes: false
+    showHitboxes: false,
+    cacheMobAssets: false
 };
 
 export function applyArticle(word, capitalize = false) {
