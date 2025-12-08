@@ -194,11 +194,7 @@ export default class Router {
 
     pipeMessage(numericID, dataView) {
         const client = state.clients.get(numericID);
-
-        if (!client) {
-            return;
-        }
-
+        if (!client) return;
         client.onMessage(new Reader(dataView, 0, true));
     }
 

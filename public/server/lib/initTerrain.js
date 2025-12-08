@@ -31,7 +31,7 @@ export default async function initTerrain(type) {
                 mapSrc = MAP_TYPES.sleepyMaze;
                 break;
             case BIOME_TYPES.GARDEN:
-                mapSrc = MAP_TYPES.sleepyMazeOmega;
+                mapSrc = MAP_TYPES.sleepyMaze;
                 break;
             case BIOME_TYPES.DESERT:
                 mapSrc = MAP_TYPES.desert;
