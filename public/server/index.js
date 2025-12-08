@@ -188,7 +188,7 @@ setInterval(() => {
                     spawner.id == info.tile?.spawn;
                 });
                 if (spawner?.availableMobs.length !== 0) {
-                    const spawn = spawner.availableMobs[spawner.availableMobs.length * Math.random() | 0]
+                    const spawn = spawner?.availableMobs[spawner?.availableMobs.length * Math.random() | 0]
                     cfg = mobConfigs[spawn[0]]
                     if (spawn[1] !== true) {
                         info.rarity = Math.min(spawn[1], spawner.maxRarity);
@@ -258,10 +258,7 @@ switch (globalThis.environmentName) {
                     break;
                 case "start":
                     state.router.begin(data);
-
-                    if (data[2]) {
-                        new ModdingAPI();
-                    }
+                    if (data[2]) new ModdingAPI();
                     break;
             }
         }
@@ -345,7 +342,7 @@ switch (globalThis.environmentName) {
 
             websocket: {
                 perMessageDeflate: true,
-
+                idleTimeout: 0,  // ← DISABLE IDLE TIMEOUT
                 async open(socket) {
                     socket.binaryType = "arraybuffer";
                     const client = state.router.addClient(socket.data.socketID, socket.data.searchParams.get("uuid"), keys.includes(socket.data.searchParams.get("clientKey")));
