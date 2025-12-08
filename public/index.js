@@ -1010,10 +1010,10 @@ function draw() {
                 message.y = lerp(message.y, y, .2);
                 message.ticker++;
 
-                if (message.ticker > (clientDebug.fps * 7.5) - messages.length * 2) {
-                    net.ChatMessage.messages.splice(i, 1);
-                    continue;
-                }
+                // if (message.ticker > (clientDebug.fps * 7.5) - messages.length * 2) {
+                //     net.ChatMessage.messages.splice(i, 1);
+                //     continue;
+                // }
 
                 switch (message.type) {
                     case 0: // Chat
