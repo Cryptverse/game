@@ -545,25 +545,30 @@ export function createServer(name, gamemode, modded, isPrivate, biome) {
 
         socket.onopen = () => {
             console.log("Connected to server");
+            
+            // Setup ping
+            const PING_INTERVAL = 30000; // 30 seconds
+            const ping = () => {if (socket.readyState === WebSocket.OPEN) socket.ping()};
+            const intervalId = setInterval(ping, PING_INTERVAL);
 
             const worker = new Worker("./server/index.js", { type: "module" });
             worker.postMessage(["start", gamemode, modded, UUID, biomeInt]);
-
+            
             socket.onmessage = event => {
                 const data = new Uint8Array(event.data);
-
+                
                 if (data[0] === 255) {
                     clearTimeout(timeout);
-
+                    
                     const ok = data[1] === 1;
-
+                    
                     if (!ok) {
                         resolve({
                             ok: false,
                             error: "Request rejected by server: " + new TextDecoder().decode(data.slice(2, -1))
                         });
                     }
-
+                    
                     resolve({
                         ok: true,
                         party: new TextDecoder().decode(data.slice(2, -1)),
@@ -572,16 +577,17 @@ export function createServer(name, gamemode, modded, isPrivate, biome) {
                     });
                     return;
                 }
-
+                
                 worker.postMessage(data);
             }
-
+            
             worker.onmessage = ({ data }) => {
                 if (socket.readyState !== WebSocket.OPEN) return;
                 socket.send(data);
             }
-
+            
             socket.onclose = () => {
+                clearInterval(intervalId);
                 console.log("Disconnected from server");
                 worker.terminate();
             }
