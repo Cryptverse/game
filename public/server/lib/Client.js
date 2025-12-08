@@ -850,6 +850,7 @@ export default class Client {
             case SERVER_BOUND.VERIFY:
                 if (this.verified) {
                     this.kick("Already verified");
+                    console.log(`Client ${this.id} kicked for already being verified as ${this.username}`);
                     return;
                 }
 
@@ -857,6 +858,7 @@ export default class Client {
                 const lowercase = this.username.toLowerCase();
                 if (this.username.length > 24 || tripsFilter(lowercase)) {
                     this.kick("Invalid username");
+                    console.log(`Client ${this.id} kicked for invalid username as ${this.username}`);
                     return;
                 }
 
@@ -1297,8 +1299,9 @@ export default class Client {
         if (this.verified) {
             console.log(`Client ${this.id} (${this.username}) disconnected`);
 
-            if (this.body && !this.body.health.isDead && this.level >= 20) {
+            if (this.body/*  && !this.body.health.isDead && this.level >= 20 */) {
                 new Disconnect(this);
+                console.log(`Client ${this.id} (${this.username}) session saved`);
             } else if (this.body) {
                 this.body.destroy();
             }
