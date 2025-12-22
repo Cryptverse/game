@@ -275,7 +275,7 @@ switch (globalThis.environmentName) {
         if (Bun.env.ENV_DONE !== "true") {
             await Bun.write("./.env", [
                 "ENV_DONE=false",
-                "ROUTING_SERVER=wss://routing.floof.supercord.lol",
+                "ROUTING_SERVER=https://routing.floof.supercord.lol",
                 "GAME_NAME=dedicated lobby",
                 "MODDED=false",
                 "GAMEMODE=maze",
@@ -364,7 +364,7 @@ switch (globalThis.environmentName) {
                         ipCounts.set(socket.data.ip, ct);
 
                         try {
-                            const res = await fetch(`${Bun.env.ROUTING_SERVER.replace("ws", "http")}/uuid/check?uuid=${client.uuid}&trustedKey=${Bun.env.SECRET}`);
+                            const res = await fetch(`${Bun.env.ROUTING_SERVER.replace("http", "ws")}/uuid/check?uuid=${client.uuid}&trustedKey=${Bun.env.SECRET}`);
                             const data = await res.json();
 
                             if (!data.ok || !data.isValid) {

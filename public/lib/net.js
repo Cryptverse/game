@@ -187,20 +187,14 @@ export async function loadUUID() {
 
     if (storageID) {
         const [id, expiresAt] = storageID.split(":");
-
         if (Date.now() < Number(expiresAt)) {
             existing = id;
         }
     }
 
     const data = await fetch(util.SERVER_URL + "/uuid/get?existing=" + existing).then(r => r.json());
-
-    if (!data.ok) {
-        throw new Error("Failed to get UUID data");
-    }
-
+    if (!data.ok) throw new Error("Failed to get UUID data");
     localStorage.setItem("uuid", data.uuid + ":" + (Date.now() + 1E3 * 60 * 60 * 24));
-
     return data.uuid;
 }
 

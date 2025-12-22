@@ -855,17 +855,11 @@ export default class Client {
                 this.talk(CLIENT_BOUND.PONG);
                 break;
             case SERVER_BOUND.VERIFY:
-                if (this.verified) {
-                    this.kick("Already verified");
-                    return;
-                }
+                if (this.verified) return this.kick("Already verified");
 
                 this.username = reader.getStringUTF8();
                 const lowercase = this.username.toLowerCase();
-                if (this.username.length > 24 || tripsFilter(lowercase)) {
-                    this.kick("Invalid username");
-                    return;
-                }
+                if (this.username.length > 24 || tripsFilter(lowercase)) return this.kick("Invalid username");
 
                 this.verified = true;
                 console.log(`Client ${this.id} verified as ${this.username}`);
@@ -877,9 +871,7 @@ export default class Client {
                   this.inventory[tier.name] = {};
                 });
 
-                if (this.uuid === state.secretKey && this.masterPermissions < 1) {
-                    this.nameColor = "#F5D230";
-                }
+                if (this.uuid === state.secretKey && this.masterPermissions < 1) this.nameColor = "#F5D230";
 
                 const dc = Client.disconnects.get(this.uuid);
 
@@ -1393,9 +1385,9 @@ export default class Client {
 
     onClose() {
         if (this.verified) {
-            console.log(`Client ${this.id} (${this.username}) disconnected`);
+            console.log(`Client ${this.id} (${this.username}) disconnected.`);
 
-            if (this.body && !this.body.health.isDead && this.level >= 20) {
+            if (this.body && !this.body.health.isDead /* && this.level >= 20 */) {
                 new Disconnect(this);
             } else if (this.body) {
                 this.body.destroy();
