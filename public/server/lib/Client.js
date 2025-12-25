@@ -697,6 +697,7 @@ class Disconnect {
         this.secondarySlots = client.secondarySlots;
         this.body = client.body;
         this.team = client.team;
+        this.inventory = client.inventory;
 
         Client.disconnects.set(this.uuid, this);
 
@@ -728,7 +729,7 @@ export default class Client {
         this.uuid = uuid;
         this.nameColor = ["#FFFFFF", "#D85555"][+masterPermissions];
         this.masterPermissions = +masterPermissions;
-
+        this.inventory = {};
         this.camera = new Camera();
 
         /** @type {Player|null} */
@@ -866,7 +867,6 @@ export default class Client {
                 this.talk(CLIENT_BOUND.READY);
                 this.sendRoom();
                 state.sendTerrain(this.id);
-                this.inventory = {};
                 tiers.forEach(tier => {
                   this.inventory[tier.name] = {};
                 });

@@ -360,8 +360,8 @@ const state = {
     mobTable: null
 };
 
-tiers.forEach(tier => {
-    state.inventory[tier.name] = {};
+if (state.inventory) tiers.forEach(tier => {
+     state.inventory[tier.name] = {};
 });
 
 export default state;
