@@ -364,7 +364,7 @@ switch (globalThis.environmentName) {
                         ipCounts.set(socket.data.ip, ct);
 
                         try {
-                            const res = await fetch(`${Bun.env.ROUTING_SERVER.replace("http", "ws")}/uuid/check?uuid=${client.uuid}&trustedKey=${Bun.env.SECRET}`);
+                            const res = await fetch(`${Bun.env.ROUTING_SERVER}/uuid/check?uuid=${client.uuid}&trustedKey=${Bun.env.SECRET}`);
                             const data = await res.json();
 
                             if (!data.ok || !data.isValid) {
@@ -414,7 +414,7 @@ switch (globalThis.environmentName) {
 
         const timezone = -Math.floor(new Date().getTimezoneOffset() / 60);
 
-        const lobbySocket = new WebSocket(`${Bun.env.ROUTING_SERVER}/ws/lobby?gameName=${Bun.env.GAME_NAME}&isModded=${Bun.env.MODDED == "true" ? "yes" : "no"}&gamemode=${Bun.env.GAMEMODE}&secretKey=${Bun.env.SECRET}&isPrivate=no&biome=${Bun.env.BIOME}&directConnect=${Bun.env.HOST},${timezone}&analytics=${ANALYTICS_DATA}`, {
+        const lobbySocket = new WebSocket(`${Bun.env.ROUTING_SERVER.replace('http', 'ws')}/ws/lobby?gameName=${Bun.env.GAME_NAME}&isModded=${Bun.env.MODDED == "true" ? "yes" : "no"}&gamemode=${Bun.env.GAMEMODE}&secretKey=${Bun.env.SECRET}&isPrivate=no&biome=${Bun.env.BIOME}&directConnect=${Bun.env.HOST},${timezone}&analytics=${ANALYTICS_DATA}`, {
             origin: Bun.env.HOST,
             headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
