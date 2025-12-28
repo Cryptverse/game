@@ -1357,10 +1357,10 @@ export class ClientSocket extends WebSocket {
                     const petalCount = reader.getUint16();
                     state.inventory ??= {}
                     state.inventory[tier.name] = {};
-                    for (let i = 0; i < petCount; i++) {
+                    for (let i = 0; i < petalCount; i++) {
                         const petalId = reader.getUint16();
                         const count = reader.getUint16();
-                        state.inventory[tier.name][petId] = count;
+                        state.inventory[tier.name][petalId] = count;
                     }
                 });
                 break;
