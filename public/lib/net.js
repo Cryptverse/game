@@ -1353,12 +1353,12 @@ export class ClientSocket extends WebSocket {
                 state.level = reader.getUint16();
                 state.levelProgressTarget = reader.getFloat32();
                 
-                tiers.forEach(tier => {
-                    const petCount = reader.getUint16();
+                state.tiers.forEach(tier => {
+                    const petalCount = reader.getUint16();
                     state.inventory ??= {}
                     state.inventory[tier.name] = {};
                     for (let i = 0; i < petCount; i++) {
-                        const petId = reader.getUint16();
+                        const petalId = reader.getUint16();
                         const count = reader.getUint16();
                         state.inventory[tier.name][petId] = count;
                     }
