@@ -1801,7 +1801,8 @@ function draw() {
             const menuRect = menu.getBoundingClientRect();
             const mouseX = mouse.x;
             const mouseY = mouse.y;
-            if (mouseX >= rect.left * 1.1 && mouseX <= rect.right * 1.1 && mouseY >= rect.top * 1.1 && mouseY <= rect.bottom * 1.1) {
+            if (mouseX >= rect.left && mouseX <= rect.right && mouseY >= rect.top && mouseY <= rect.bottom) {
+                // net.state.petalHover = [petal.index, petal.rarity, x, y];
                 if (!inventoryDragConfig.enabled && !dragConfig.enabled && !joystick.on && mouse.left && rect.y > menuRect.top) {
                     beginInventoryDragDrop(
                         rect.x * 1.1 / uScale,
