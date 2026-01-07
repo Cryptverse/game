@@ -178,17 +178,15 @@ setInterval(() => {
     }
 
     if (!state.isWaves && state.livingMobCount < state.maxMobs && Math.random() > .9) {
-        if (Math.random() > .999) {
+        /* if (Math.random() > .999) {
             const info = state.spawnNearPlayer(mobConfigs[0]);
             new AIPlayer(info.position, info.rarity, Math.max(1, info.rarity * 10 + (Math.random() * 6 | 0 - 3)));
-        } else if (state.gamemode === GAMEMODES.MAZE) {
+        } else  */if (state.gamemode === GAMEMODES.MAZE) {
             let cfg = mobConfigs[getMobIndex()];
             const info = state.spawnNearPlayer(cfg);
             if (info.tile?.spawn !== undefined) {
-                const spawner = state.mapData.mobSpawners.find(spawner => {
-                    spawner.id == info.tile?.spawn;
-                });
-                if (spawner?.availableMobs.length !== 0) {
+                const spawner = state.mapData.mobSpawners.find(spawner => {spawner.id == info.tile?.spawn} );
+                if (spawner && spawner.availableMobs.length) {
                     const spawn = spawner.availableMobs[spawner.availableMobs.length * Math.random() | 0]
                     cfg = mobConfigs[spawn[0]]
                     if (spawn[1] !== true) {
