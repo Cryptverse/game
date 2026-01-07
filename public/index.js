@@ -808,14 +808,16 @@ function draw() {
 
     if (net.state.disconnected) {
         const sc = uiScale();
-
-        ctx.save();
-        ctx.scale(sc, sc);
+        // ctx.save();
+        const oldTransform = ctx.getTransform();
+        // ctx.scale(sc, sc);
+        ctx.setTransform(sc, 0, 0, sc, 0, 0);
         const w = canvas.width / sc;
         const h = canvas.height / sc;
         text("Disconnected", w / 2, h / 2, 30);
         text(net.state.disconnectMessage, w / 2, h / 2 + 30, 15);
-        ctx.restore();
+        // ctx.restore();
+        ctx.setTransform(oldTransform);
         return;
     }
 
@@ -826,174 +828,178 @@ function draw() {
     net.state.markers.forEach(marker => {
         const drawX = marker.x * scale - cameraX + halfWidth;
         const drawY = marker.y * scale - cameraY + halfHeight;
-
-        if (marker.tick > 1) {
-            net.state.markers.delete(marker.id);
-            return;
-        }
-
-        ctx.save();
-        ctx.translate(drawX, drawY);
-        ctx.scale(marker.size * scale, marker.size * scale);
+        if (marker.tick > 1) return net.state.markers.delete(marker.id);
+        const oldTransform = ctx.getTransform();
+        ctx.setTransform(marker.size * scale, 0, 0, marker.size * scale, drawX, drawY)
         pentagram(ctx, marker.tick);
-        ctx.restore();
+        ctx.setTransform(oldTransform);
     });
 
-    {
-        if (!net.state.previousMobs) {
-            net.state.previousMobs = new Map();
-            net.state.dyingMobs = new Map();
-            net.state.previousPetals = new Map();
-            net.state.dyingPetals = new Map();
-            net.state.previousPlayers = new Map();
-            net.state.dyingPlayers = new Map();
-        }
-    
-        const currentMobs = new Map();
-        const currentPetals = new Map();
-        const currentPlayers = new Map();
-        
-        net.state.mobs.forEach(mob => {
-            currentMobs.set(mob.id, mob);
-        });
-        net.state.petals.forEach(petal => {
-            currentPetals.set(petal.id, petal);
-        });
-        net.state.players.forEach(p => {
-            currentPlayers.set(p.id, p);
-        });
-        
-        net.state.previousMobs.forEach((mob, id) => {
-            if (!currentMobs.has(id)) {
-                net.state.dyingMobs.set(id, {
-                    mob,
-                    progress: 0
-                });
-            }
-        });
-        net.state.previousPetals.forEach((petal, id) => {
-            if (!currentPetals.has(id)) {
-                net.state.dyingPetals.set(id, {
-                    petal,
-                    progress: 0
-                });
-            }
-        });
-        net.state.previousPlayers.forEach((p, id) => {
-            if (!currentPlayers.has(id)) {
-                net.state.dyingPlayers.set(id, {
-                    player: p,
-                    progress: 0
-                });
-            }
-        });
-
-        net.state.dyingPetals.forEach((data, id) => {
-            const entity = data.petal;
-            data.progress += .2;
-            if (data.progress >= 1) {
-                net.state.dyingPetals.delete(id);
-                return;
-            }
-    
-            const fade = 1 - data.progress;
-            const scaling = 1.35 + data.progress;
-    
-            let drawX = entity.x * scale - cameraX + halfWidth,
-                drawY = entity.y * scale - cameraY + halfHeight;
-            const size = entity.size * scale * scaling;
-    
-            ctx.save();
-            ctx.globalAlpha = fade;
-            ctx.translate(drawX, drawY);
-            ctx.scale(size, size);
-            ctx.rotate(entity.facing);
-            drawPetal(entity.index, entity.hit, ctx, entity.id, entity.size);
-            ctx.restore();
-        });
-        
-        net.state.dyingMobs.forEach((data, id) => {
-            const entity = data.mob;
-            data.progress += .2;
-            if (data.progress >= 1) {
-                net.state.dyingMobs.delete(id);
-                return;
-            }
-        
-            const fade = 1 - data.progress;
-            const scaling = 1.35 + data.progress;
-        
-            let drawX = entity.x * scale - cameraX + halfWidth,
-                drawY = entity.y * scale - cameraY + halfHeight;
-            const size = entity.size * scale * scaling;
-
-            ctx.save();
-            ctx.globalAlpha = fade;
-            ctx.translate(drawX, drawY);
-            ctx.scale(size, size);
-            ctx.rotate(entity.facing);
-    
-            if (options.fancyGraphics && net.state.room.biome === BIOME_TYPES.HELL) {
-                ctx.shadowBlur = 10 * scale * (Math.sin(performance.now() / 500 + entity.id * 3) * .8 + .8);
-                ctx.shadowColor = "#FFFFFF";
-            }
-    
-            drawMob(entity.id, entity.index, entity.rarity, entity.hit, ctx, entity.attack, entity.friendly, entity.facing, entity.extraData);
-            ctx.restore();
-        });
-    
-        net.state.dyingPlayers.forEach((data, id) => {
-            const entity = data.player;
-            data.progress += .2;
-            if (data.progress >= 1) {
-                net.state.dyingPlayers.delete(id);
-                return;
-            }
-            const fade = 1 - data.progress;
-            const scaling = 1 + data.progress;
-    
-            let drawX = entity.x * scale - cameraX + halfWidth,
-                drawY = entity.y * scale - cameraY + halfHeight;
-            const size = (entity.size * scale) * scaling;
-    
-            ctx.save();
-            ctx.globalAlpha = fade;
-            ctx.translate(drawX, drawY);
-            ctx.scale(size, size);
-            
-            setStyle(mixColors([colors.playerYellow, colors.team1, colors.team2][entity.team] ?? colors.crafting, colors.legendary, entity.hit * .5), .1);
-            
-            ctx.beginPath();
-            ctx.arc(0, 0, 1, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.stroke();
-
-            drawFace(1 * .375, 0, 1, .6, 1, true);
-    
-            ctx.restore();
-        });
-        
-        net.state.previousMobs = currentMobs;
-        net.state.previousPetals = currentPetals;
-        net.state.previousPlayers = currentPlayers;
+    if (!net.state.previousMobs) {
+        net.state.previousMobs = new Map();
+        net.state.dyingMobs = new Map();
+        net.state.previousPetals = new Map();
+        net.state.dyingPetals = new Map();
+        net.state.previousPlayers = new Map();
+        net.state.dyingPlayers = new Map();
     }
+
+    const currentMobs = new Map();
+    const currentPetals = new Map();
+    const currentPlayers = new Map();
+    
+    net.state.mobs.forEach(mob => currentMobs.set(mob.id, mob));
+    net.state.petals.forEach(petal => currentPetals.set(petal.id, petal));
+    net.state.players.forEach(p => currentPlayers.set(p.id, p));
+    
+    net.state.previousMobs.forEach((mob, id) => {
+        if (!currentMobs.has(id)) net.state.dyingMobs.set(id, { mob, progress: 0 });
+    });
+
+    net.state.previousPetals.forEach((petal, id) => {
+        if (!currentPetals.has(id)) net.state.dyingPetals.set(id, { petal, progress: 0 });
+    });
+
+    net.state.previousPlayers.forEach((p, id) => {
+        if (!currentPlayers.has(id)) net.state.dyingPlayers.set(id, { player: p, progress: 0 });
+    });
+
+    net.state.dyingPetals.forEach((data, id) => {
+        const entity = data.petal;
+        data.progress += .2;
+        if (data.progress >= 1) return net.state.dyingPetals.delete(id);
+        const fade = 1 - data.progress;
+        const scaling = 1.35 + data.progress;
+        const drawX = entity.x * scale - cameraX + halfWidth;
+        const drawY = entity.y * scale - cameraY + halfHeight;
+        const size = entity.size * scale * scaling;
+
+        // ctx.save();
+        const oldTransform = ctx.getTransform();
+        const oldFillStyle = ctx.fillStyle;
+        const oldStrokeStyle = ctx.strokeStyle;
+        const oldLineWidth = ctx.lineWidth;
+        const oldGlobalAlpha = ctx.globalAlpha;
+        const oldShadowBlur = ctx.shadowBlur;
+        const oldShadowColor = ctx.shadowColor;
+        ctx.globalAlpha = fade;
+        // ctx.translate(drawX, drawY);
+        // ctx.scale(size, size);
+        ctx.setTransform(size, 0, 0, size, drawX, drawY);
+        ctx.rotate(entity.facing);
+        drawPetal(entity.index, entity.hit, ctx, entity.id, entity.size);
+        // ctx.restore();
+        ctx.setTransform(oldTransform);
+        ctx.fillStyle = oldFillStyle;
+        ctx.strokeStyle = oldStrokeStyle;
+        ctx.lineWidth = oldLineWidth;
+        ctx.globalAlpha = oldGlobalAlpha;
+        ctx.shadowBlur = oldShadowBlur;
+        ctx.shadowColor = oldShadowColor;
+    });
+    
+    net.state.dyingMobs.forEach((data, id) => {
+        const entity = data.mob;
+        data.progress += .2;
+        if (data.progress >= 1) return net.state.dyingMobs.delete(id); 
+        const fade = 1 - data.progress;
+        const scaling = 1.35 + data.progress;
+        const drawX = entity.x * scale - cameraX + halfWidth;
+        const drawY = entity.y * scale - cameraY + halfHeight;
+        const size = entity.size * scale * scaling;
+
+        // ctx.save();
+        const oldTransform = ctx.getTransform();
+        const oldFillStyle = ctx.fillStyle;
+        const oldStrokeStyle = ctx.strokeStyle;
+        const oldLineWidth = ctx.lineWidth;
+        const oldGlobalAlpha = ctx.globalAlpha;
+        const oldShadowBlur = ctx.shadowBlur;
+        const oldShadowColor = ctx.shadowColor;
+        ctx.globalAlpha = fade;
+        // ctx.translate(drawX, drawY);
+        // ctx.scale(size, size);
+        ctx.setTransform(size, 0, 0, size, drawX, drawY);
+        ctx.rotate(entity.facing);
+
+        if (options.fancyGraphics && net.state.room.biome === BIOME_TYPES.HELL) {
+            ctx.shadowBlur = 10 * scale * (Math.sin(performance.now() / 500 + entity.id * 3) * .8 + .8);
+            ctx.shadowColor = "#FFFFFF";
+        }
+
+        drawMob(entity.id, entity.index, entity.rarity, entity.hit, ctx, entity.attack, entity.friendly, entity.facing, entity.extraData);
+        // ctx.restore();
+        ctx.setTransform(oldTransform);
+        ctx.fillStyle = oldFillStyle;
+        ctx.strokeStyle = oldStrokeStyle;
+        ctx.lineWidth = oldLineWidth;
+        ctx.globalAlpha = oldGlobalAlpha;
+        ctx.shadowBlur = oldShadowBlur;
+        ctx.shadowColor = oldShadowColor;
+    });
+
+    net.state.dyingPlayers.forEach((data, id) => {
+        const entity = data.player;
+        data.progress += .2;
+        if (data.progress >= 1) return net.state.dyingPlayers.delete(id);
+        const fade = 1 - data.progress;
+        const scaling = 1 + data.progress;
+
+        const drawX = entity.x * scale - cameraX + halfWidth;
+        const drawY = entity.y * scale - cameraY + halfHeight;
+        const size = (entity.size * scale) * scaling;
+
+        // ctx.save();
+        const oldAlpha = ctx.globalAlpha; 
+        const oldTransform = ctx.getTransform();
+        ctx.globalAlpha = fade;
+        // ctx.translate(drawX, drawY);
+        // ctx.scale(size, size);
+        ctx.setTransform(size, 0, 0, size, drawX, drawY);
+        setStyle(mixColors([colors.playerYellow, colors.team1, colors.team2][entity.team] ?? colors.crafting, colors.legendary, entity.hit * .5), .1);
+        ctx.beginPath();
+        ctx.arc(0, 0, 1, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        drawFace(1 * .375, 0, 1, .6, 1, true);
+        // ctx.restore();
+        ctx.globalAlpha = oldAlpha;
+        ctx.setTransform(oldTransform);
+    });
+    
+    net.state.previousMobs = currentMobs;
+    net.state.previousPetals = currentPetals;
+    net.state.previousPlayers = currentPlayers;
 
     net.state.petals.forEach(entity => {
         entity.interpolate();
         entity.size2 ??= entity.index === 24 || entity.index === 64 ? entity.size / 1.4 : entity.size;
-        if (entity.index === 24 || entity.index === 64) {
-            entity.size2 += (entity.size - entity.size2) * .25;
-        }
+        if (entity.index === 24 || entity.index === 64) entity.size2 += (entity.size - entity.size2) * .25;
 
-        let drawX = entity.x * scale - cameraX + halfWidth,
-            drawY = entity.y * scale - cameraY + halfHeight;
+        const drawX = entity.x * scale - cameraX + halfWidth;
+        const drawY = entity.y * scale - cameraY + halfHeight;
 
-        ctx.save();
-        ctx.translate(drawX, drawY);
-        ctx.scale(entity.size2 * scale, entity.size2 * scale);
+        // ctx.save();
+        // ctx.translate(drawX, drawY);
+        // ctx.scale(entity.size2 * scale, entity.size2 * scale);
+        const oldTransform = ctx.getTransform();
+        const oldFillStyle = ctx.fillStyle;
+        const oldStrokeStyle = ctx.strokeStyle;
+        const oldLineWidth = ctx.lineWidth;
+        const oldGlobalAlpha = ctx.globalAlpha;
+        const oldShadowBlur = ctx.shadowBlur;
+        const oldShadowColor = ctx.shadowColor;
+        ctx.setTransform(entity.size2 * scale, 0, 0, entity.size2 * scale, drawX, drawY);
         ctx.rotate(entity.facing);
         drawPetal(entity.index, entity.hit, ctx, entity.id, entity.size2);
-        ctx.restore();
+        // ctx.restore();
+        ctx.setTransform(oldTransform);
+        ctx.fillStyle = oldFillStyle;
+        ctx.strokeStyle = oldStrokeStyle;
+        ctx.lineWidth = oldLineWidth;
+        ctx.globalAlpha = oldGlobalAlpha;
+        ctx.shadowBlur = oldShadowBlur;
+        ctx.shadowColor = oldShadowColor;
 
         if (options.showHitboxes) {
             ctx.beginPath();
@@ -1016,16 +1022,19 @@ function draw() {
     });
 
     net.state.drops.forEach(entity => {
-        let drawX = entity.x * scale - cameraX + halfWidth,
-            drawY = entity.y * scale - cameraY + halfHeight,
-            outlineTimer = (Math.sin(performance.now() / 250 + entity.id) + 1.5);
+        const oldTransform = ctx.getTransform();
+        const oldFillStyle = ctx.fillStyle;
+        const oldAlpha = ctx.globalAlpha;
+        const drawX = entity.x * scale - cameraX + halfWidth;
+        const drawY = entity.y * scale - cameraY + halfHeight;
+        const outlineTimer = Math.sin(performance.now() / 250 + entity.id) + 1.5;
         entity.creation ??= performance.now();
-        ctx.save();
-        ctx.translate(drawX, drawY);
+        // ctx.save();
+        // ctx.translate(drawX, drawY);
         entity.rotation ??= (Math.random() * (Math.PI / 6)) - (Math.PI / 12);
-
         const aSin = Math.sin((performance.now() + entity.creation) / 200) * .05;
-        ctx.scale((1 + aSin) * entity.size * scale, (1 + aSin) * entity.size * scale);
+        // ctx.scale((1 + aSin) * entity.size * scale, (1 + aSin) * entity.size * scale);
+        ctx.setTransform((1 + aSin) * entity.size * scale, 0, 0, (1 + aSin) * entity.size * scale, drawX, drawY);
         ctx.rotate(entity.rotation);
 
         ctx.fillStyle = colors.black;
@@ -1035,24 +1044,32 @@ function draw() {
         ctx.fill();
         ctx.closePath();
 
-        ctx.globalAlpha /= .125;
+        ctx.globalAlpha *= 8;
 
         ctx.drawImage(getPetalIcon(entity.index, entity.rarity), -.5, -.5, 1, 1);
 
-        ctx.restore();
+        // ctx.restore();
+        ctx.fillStyle = oldFillStyle;
+        ctx.globalAlpha = oldAlpha;
+        ctx.setTransform(oldTransform);
     });
 
     net.state.mobs.forEach(entity => {
         entity.interpolate();
-
-        let drawX = entity.x * scale - cameraX + halfWidth,
-            drawY = entity.y * scale - cameraY + halfHeight;
-
+        const drawX = entity.x * scale - cameraX + halfWidth;
+        const drawY = entity.y * scale - cameraY + halfHeight;
         const size = entity.size * scale;
-
-        ctx.save();
-        ctx.translate(drawX, drawY);
-        ctx.scale(size, size);
+        // ctx.save();
+        // ctx.translate(drawX, drawY);
+        // ctx.scale(size, size);
+        const oldTransform = ctx.getTransform();
+        const oldFillStyle = ctx.fillStyle;
+        const oldStrokeStyle = ctx.strokeStyle;
+        const oldLineWidth = ctx.lineWidth;
+        const oldGlobalAlpha = ctx.globalAlpha;
+        const oldShadowBlur = ctx.shadowBlur;
+        const oldShadowColor = ctx.shadowColor;
+        ctx.setTransform(size, 0, 0, size, drawX, drawY);
         ctx.rotate(entity.facing);
 
         if (options.fancyGraphics && net.state.room.biome === BIOME_TYPES.HELL) {
@@ -1061,8 +1078,15 @@ function draw() {
         }
 
         drawMob(entity.id, entity.index, entity.rarity, entity.hit, ctx, entity.attack, entity.friendly, entity.facing, entity.extraData);
-        ctx.restore();
-
+        // ctx.restore();
+        ctx.setTransform(oldTransform);
+        ctx.fillStyle = oldFillStyle;
+        ctx.strokeStyle = oldStrokeStyle;
+        ctx.lineWidth = oldLineWidth;
+        ctx.globalAlpha = oldGlobalAlpha;
+        ctx.shadowBlur = oldShadowBlur;
+        ctx.shadowColor = oldShadowColor;
+        
         if (options.showHitboxes) {
             ctx.beginPath();
             ctx.arc(drawX, drawY, size, 0, Math.PI * 2);
@@ -1121,8 +1145,13 @@ function draw() {
         const size = entity.size * scale;
 
         if (entity.wearing & WEARABLES.AMULET) {
-            ctx.save();
-            ctx.translate(drawX, drawY);
+            // ctx.save();
+            // ctx.translate(drawX, drawY);
+            const oldTransform = ctx.getTransform();
+            const oldStrokeStyle = ctx.strokeStyle;
+            const oldLineWidth = ctx.lineWidth;
+            const oldFillStyle = ctx.fillStyle;
+            ctx.setTransform(1, 0, 0, 1, drawX, drawY);
 
             const xTrans = size * .334 * Math.sin(performance.now() / 1250 + entity.id * Math.PI / 6) * scale;
 
@@ -1135,20 +1164,28 @@ function draw() {
             ctx.lineWidth = 2.5 * scale;
             ctx.stroke();
 
-            ctx.translate(xTrans, size * 2.5);
-            ctx.scale(size * .6, size * .6);
+            // ctx.translate(xTrans, size * 2.5);
+            // ctx.scale(size * .6, size * .6);
+            ctx.setTransform(size * .6, 0, 0, size * .6, xTrans, size * 2.5)
             ctx.rotate(performance.now() / 1000 + entity.id * 5);
             drawAmulet(ctx, false);
-            ctx.restore();
+            // ctx.restore();
+            ctx.setTransform(oldTransform);
+            ctx.strokeStyle = oldStrokeStyle;
+            ctx.lineWidth = oldLineWidth;
+            ctx.fillStyle = oldFillStyle;
         }
 
         if (entity.wearing & WEARABLES.ARMOR) {
-            ctx.save();
-            ctx.translate(drawX, drawY);
+            // ctx.save();
+            // ctx.translate(drawX, drawY);
+            // ctx.scale(size * 1.35, size * 1.35);
+            const oldTransform = ctx.getTransform();
+            ctx.setTransform(size * 1.35, 0, 0, size * 1.35, drawX, drawY);
             ctx.rotate(performance.now() / 250 + entity.id * 5);
-            ctx.scale(size * 1.35, size * 1.35);
             drawArmor(ctx);
-            ctx.restore();
+            // ctx.restore();
+            ctx.setTransform(oldTransform);
         }
 
         ctx.beginPath();
@@ -1156,24 +1193,31 @@ function draw() {
         ctx.stroke();
         ctx.fill();
 
-        ctx.translate(drawX, drawY);
+        const oldTransform = ctx.getTransform();
+        ctx.setTransform(1, 0, 0, 1, drawX, drawY);
         drawFace(size * .4, entity.facing, entity.mood, entity.mouthDip, expression);
-        ctx.translate(-drawX, -drawY);
+        ctx.setTransform(oldTransform);
 
         if (entity.wearing & WEARABLES.THIRD_EYE) {
-            ctx.save();
-            ctx.translate(drawX, drawY - size * .6);
-            ctx.scale(size * .3, size * .3);
+            const oldTransform = ctx.getTransform();
+            // ctx.save();
+            // ctx.translate(drawX, drawY - size * .6);
+            // ctx.scale(size * .3, size * .3);
+            ctx.setTransform(size * .3, 0, 0, size * .3, drawX, drawY - size * .6);
             drawThirdEye(ctx, false);
-            ctx.restore();
+            // ctx.restore();
+            ctx.setTransform(oldTransform);
         }
 
         if (entity.wearing & WEARABLES.ANTENNAE) {
-            ctx.save();
-            ctx.translate(drawX, drawY - size * .8);
-            ctx.scale(size * .9, size * .9);
+            const oldTransform = ctx.getTransform();
+            // ctx.save();
+            // ctx.translate(drawX, drawY - size * .8);
+            // ctx.scale(size * .9, size * .9);
+            ctx.setTransform(size * .9, 0, 0, size* .9, drawX, drawY - size * .8);
             drawAntennae(ctx);
-            ctx.restore();
+            // ctx.restore();
+            ctx.setTransform(oldTransform);
         }
 
         if (options.showHitboxes) {
@@ -1819,7 +1863,7 @@ function draw() {
                         processInventoryDrop();
                         menu.classList.toggle("active");
                     };
-                }
+                } 
             }
         });
     }

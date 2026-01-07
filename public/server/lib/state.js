@@ -307,14 +307,11 @@ const state = {
     terrain: new Map(),
     terrainGridWidth: 0,
     terrainGridHeight: 0,
-
     maxMobs: 6,
-
     livingMobCount: 0,
     aliveMobs: [],
     alivePlayers: [],
-    inventory: {},
-
+    inventory: Object.fromEntries(tiers.map(tier => [tier.name, {}])),
     secretKey: crypto.getRandomValues(new Uint8Array(32)).join(""),
 
     /** @type {Zone[]} */
