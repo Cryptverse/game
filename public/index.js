@@ -1750,7 +1750,7 @@ function draw() {
         let x = width - barMaxWidth - 30;
         let y = 175;
     
-        const playersSorted = [...net.state.alivePlayers].sort((a, b) => b.xp - a.xp);
+        const playersSorted = [...net.state.alivePlayers].sort((a, b) => b.xp - a.xp).slice(0, 10);
     
         const maxXp = playersSorted[0].xp;
     
