@@ -28,7 +28,7 @@ export default async function initTerrain(type) {
     } else {
         switch (type) {
             case BIOME_TYPES.DEFAULT:
-                mapSrc = MAP_TYPES.sleepyMaze;
+                mapSrc = MAP_TYPES.sleepyMazeOmega;
                 break;
             case BIOME_TYPES.GARDEN:
                 mapSrc = MAP_TYPES.sleepyMazeOmega;
