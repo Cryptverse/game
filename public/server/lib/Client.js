@@ -867,9 +867,7 @@ export default class Client {
                 this.talk(CLIENT_BOUND.READY);
                 this.sendRoom();
                 state.sendTerrain(this.id);
-                tiers.forEach(tier => {
-                  this.inventory[tier.name] = {};
-                });
+                tiers.forEach(tier => this.inventory[tier.name] = {});
 
                 if (this.uuid === state.secretKey && this.masterPermissions < 1) this.nameColor = "#F5D230";
 
@@ -1386,17 +1384,16 @@ export default class Client {
     onClose() {
         if (this.verified) {
             console.log(`Client ${this.id} (${this.username}) disconnected.`);
-
-            if (this.body && !this.body.health.isDead /* && this.level >= 20 */) {
-                new Disconnect(this);
-            } else if (this.body) {
-                this.body.destroy();
-                state.alivePlayers = state.alivePlayers.filter(m => m.id !== this.id);
-            }
+            // if (this.body /* && !this.body.health.isDead && this.level >= 20 */) {
+            new Disconnect(this);
+            // } else 
+            this.body?.destroy();
+            // }
         } else {
             console.log(`Client ${this.id} disconnected`);
         }
-
+        
+        state.alivePlayers = state.alivePlayers.filter(m => m.id !== this.id);
         state.clients.delete(this.id);
     }
 
