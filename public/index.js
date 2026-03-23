@@ -279,7 +279,7 @@ canvas.addEventListener("touchstart", e => {
 
         const dx = mx - joystick.baseX;
         const dy = my - joystick.baseY;
-        const dist = Math.sqrt(dx*dx + dy*dy);
+        const dist = Math.sqrt(dx * dx + dy * dy);
         if (!joystick.on && dist < joystick.radius) {
             joystick.on = true;
             joystick.pointerId = touch.identifier;
@@ -289,7 +289,7 @@ canvas.addEventListener("touchstart", e => {
 
         const adx = mx - attackButton.x;
         const ady = my - attackButton.y;
-        const adist = Math.sqrt(adx*adx + ady*ady);
+        const adist = Math.sqrt(adx * adx + ady * ady);
         if (!attackButton.on && adist < attackButton.radius) {
             attackButton.on = true;
             attackButton.pointerId = touch.identifier;
@@ -297,7 +297,7 @@ canvas.addEventListener("touchstart", e => {
 
         const ddx = mx - defendButton.x;
         const ddy = my - defendButton.y;
-        const ddist = Math.sqrt(ddx*ddx + ddy*ddy);
+        const ddist = Math.sqrt(ddx * ddx + ddy * ddy);
         if (!defendButton.on && ddist < defendButton.radius) {
             defendButton.on = true;
             defendButton.pointerId = touch.identifier;
@@ -317,7 +317,7 @@ canvas.addEventListener("touchmove", e => {
         if (joystick.on && touch.identifier === joystick.pointerId) {
             const dx = mx - joystick.baseX;
             const dy = my - joystick.baseY;
-            const dist = Math.min(Math.sqrt(dx*dx + dy*dy), joystick.radius);
+            const dist = Math.min(Math.sqrt(dx * dx + dy * dy), joystick.radius);
             const angle = Math.atan2(dy, dx);
             joystick.angle = angle;
             joystick.distance = dist / joystick.radius;
@@ -737,7 +737,7 @@ function drawInventory() {
                 const icon = document.createElement("canvas");
                 icon.width = petalSize;
                 icon.height = petalSize;
-                
+
                 icon.style.width = petalSize + "px";
                 icon.style.height = petalSize + "px";
                 icon.style.flex = "0 0 auto";
@@ -758,7 +758,7 @@ function drawInventory() {
                     c.strokeText(text, petalSize - 4, 4);
                     c.fillText(text, petalSize - 4, 4);
                 }
-                
+
                 petal.appendChild(icon);
 
                 net.state.petalElements.push({
@@ -857,11 +857,11 @@ function draw() {
     const currentMobs = new Map();
     const currentPetals = new Map();
     const currentPlayers = new Map();
-    
+
     net.state.mobs.forEach(mob => currentMobs.set(mob.id, mob));
     net.state.petals.forEach(petal => currentPetals.set(petal.id, petal));
     net.state.players.forEach(p => currentPlayers.set(p.id, p));
-    
+
     net.state.previousMobs.forEach((mob, id) => {
         if (!currentMobs.has(id)) net.state.dyingMobs.set(id, { mob, progress: 0 });
     });
@@ -907,11 +907,11 @@ function draw() {
         ctx.shadowBlur = oldShadowBlur;
         ctx.shadowColor = oldShadowColor;
     });
-    
+
     net.state.dyingMobs.forEach((data, id) => {
         const entity = data.mob;
         data.progress += .2;
-        if (data.progress >= 1) return net.state.dyingMobs.delete(id); 
+        if (data.progress >= 1) return net.state.dyingMobs.delete(id);
         const fade = 1 - data.progress;
         const scaling = 1.35 + data.progress;
         const drawX = entity.x * scale - cameraX + halfWidth;
@@ -960,7 +960,7 @@ function draw() {
         const size = (entity.size * scale) * scaling;
 
         // ctx.save();
-        const oldAlpha = ctx.globalAlpha; 
+        const oldAlpha = ctx.globalAlpha;
         const oldTransform = ctx.getTransform();
         ctx.globalAlpha = fade;
         // ctx.translate(drawX, drawY);
@@ -976,7 +976,7 @@ function draw() {
         ctx.globalAlpha = oldAlpha;
         ctx.setTransform(oldTransform);
     });
-    
+
     net.state.previousMobs = currentMobs;
     net.state.previousPetals = currentPetals;
     net.state.previousPlayers = currentPlayers;
@@ -1096,7 +1096,7 @@ function draw() {
         ctx.globalAlpha = oldGlobalAlpha;
         ctx.shadowBlur = oldShadowBlur;
         ctx.shadowColor = oldShadowColor;
-        
+
         if (options.showHitboxes) {
             ctx.beginPath();
             ctx.arc(drawX, drawY, size, 0, Math.PI * 2);
@@ -1224,7 +1224,7 @@ function draw() {
             // ctx.save();
             // ctx.translate(drawX, drawY - size * .8);
             // ctx.scale(size * .9, size * .9);
-            ctx.setTransform(size * .9, 0, 0, size* .9, drawX, drawY - size * .8);
+            ctx.setTransform(size * .9, 0, 0, size * .9, drawX, drawY - size * .8);
             drawAntennae(ctx);
             // ctx.restore();
             ctx.setTransform(oldTransform);
@@ -1330,7 +1330,7 @@ function draw() {
             ctx.roundRect(x, y, boxSize, boxSize, 4);
             ctx.closePath();
             ctx.fill();
-            
+
             ctx.fillStyle = colors.unique
             ctx.beginPath();
             ctx.roundRect(x + lineWidth, y + lineWidth, boxSize - lineWidth * 2, boxSize - lineWidth * 2, 2);
@@ -1357,7 +1357,7 @@ function draw() {
                     } else {
                         slot.ratio = lerp(slot.ratio, slot.realRatio, .1);
                     }
-    
+
                     if (slot.ratio < .995) {
                         drawPetalIconWithRatio(slot.index, slot.rarity, x, y, boxSize, slot.ratio, ctx);
                     } else {
@@ -1367,16 +1367,16 @@ function draw() {
                         ctx.drawImage(getPetalIcon(slot.index, slot.rarity), 0, 0, 1, 1);
                         ctx.restore();
                     }
-    
+
                     if (mX > x && mX < x + boxSize && mY > y && mY < y + boxSize) {
                         net.state.petalHover = [slot.index, slot.rarity, x, y];
-    
+
                         if (mouse.left && !dragConfig.enabled && !inventoryDragConfig.enabled && !joystick.on) {
                             beginDragDrop(x + boxSize / 2, y + boxSize / 2, boxSize, slot.index, slot.rarity);
                             dragConfig.type = DRAG_TYPE_MAINDOCKER;
                             dragConfig.index = i;
                             dragConfig.item.stableSize = boxSize;
-    
+
                             dragConfig.onDrop = () => {
                                 if (!processDrop()) {
                                     slot.icon.x = mouse.x / uScale - boxSize / 2;
@@ -1422,7 +1422,7 @@ function draw() {
                 ctx.roundRect(x, y, secondaryBoxSize, secondaryBoxSize, 4);
                 ctx.closePath();
                 ctx.fill();
-                
+
                 ctx.fillStyle = colors.unique
                 ctx.beginPath();
                 ctx.roundRect(x + (lineWidth - 1), y + (lineWidth - 1), secondaryBoxSize - (lineWidth - 1) * 2, secondaryBoxSize - (lineWidth - 1) * 2, 2);
@@ -1502,13 +1502,13 @@ function draw() {
     }
 
     net.state.iconStuff ??= [];
-    
+
     function drawIconsToOffscreen(info) {
         net.state.iconStuff = [];
-    
+
         mobIconCanvas.width = width;
         mobIconCanvas.height = height;
-    
+
         const ctx = mobIconCtx;
         ctx.clearRect(0, 0, mobIconCanvas.width, mobIconCanvas.height);
         let boxSize = 75;
@@ -1516,10 +1516,10 @@ function draw() {
         let gapX = 5;
 
         ctx.lineCap = ctx.lineJoin = "round";
-    
+
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
-    
+
         const groupedByIndex = {};
         net.state.waveInfo.aliveMobs.forEach(mob => {
             if (!groupedByIndex[mob.index]) groupedByIndex[mob.index] = {};
@@ -1532,7 +1532,7 @@ function draw() {
             }
             groupedByIndex[mob.index][mob.rarity].count++;
         });
-    
+
         const mobStacks = Object.entries(groupedByIndex)
             .map(([index, rarities]) => Object.values(rarities).sort((a, b) => a.rarity - b.rarity))
             .sort((a, b) => {
@@ -1543,7 +1543,7 @@ function draw() {
         boxSize -= mobStacks.length / 1.1;
         gapX -= mobStacks.length;
         gapY -= mobStacks.length / 1.2;
-    
+
         mobStacks.forEach((stack, stackI) => {
             stack.forEach((entity, rarityI) => {
                 const x = width / 2 + 45 - (80 / 2) + (stackI - mobStacks.length / 2) * (80 + gapX);
@@ -1556,16 +1556,16 @@ function draw() {
                     rarity: entity.rarity,
                     count: entity.count
                 });
-    
+
                 setStyle(net.state.tiers[entity.rarity].color, 5, .2, ctx);
                 ctx.save();
                 ctx.beginPath();
                 ctx.roundRect(x, y, boxSize, boxSize, 5);
                 ctx.fill();
                 ctx.clip();
-    
+
                 ctx.translate(x + boxSize / 2, y + boxSize / 2);
-                
+
                 let indexScales = {
                     0: 4, // Ladybug
                     1: 4, // Rock
@@ -1641,7 +1641,7 @@ function draw() {
                     71: 4, // Jack O Lantern
                     72: 4.5, // Crab
                     73: 4.5, // Tank
-                    
+
                     255: 4, // Bot
                 }
 
@@ -1662,9 +1662,9 @@ function draw() {
                     ctx.stroke();
                     drawFace(.35, -Math.PI / 4, 1.7, 1.7, 1, false, ctx);
                 }
-    
+
                 ctx.restore();
-    
+
                 ctx.beginPath();
                 ctx.roundRect(x, y, boxSize, boxSize, 5);
                 ctx.stroke();
@@ -1691,14 +1691,14 @@ function draw() {
                 drawIconsToOffscreen(net.state.waveInfo.aliveMobs);
                 net.state.aliveMobs2 = JSON.parse(JSON.stringify(net.state.waveInfo.aliveMobs));
             }
-        
+
             ctx.drawImage(mobIconCanvas, 0, 0);
 
             const mX = mouse.x / uiScale();
             const mY = mouse.y / uiScale();
-    
+
             net.state.mobHover = null;
-    
+
             net.state.iconStuff.forEach(hit => {
                 if (mX > hit.x && mX < hit.x + hit.size && mY > hit.y && mY < hit.y + hit.size) {
                     net.state.mobHover = [
@@ -1750,7 +1750,7 @@ function draw() {
             );
             ctx.fill();
         }
-        
+
         { // Level
             net.state.levelProgress = lerp(net.state.levelProgress, net.state.levelProgressTarget, .1);
 
@@ -1795,37 +1795,37 @@ function draw() {
         const barMaxWidth = 180;
         let x = width - barMaxWidth - 30;
         let y = 175;
-    
+
         const playersSorted = [...net.state.alivePlayers].sort((a, b) => b.xp - a.xp).slice(0, 10);
-    
+
         const maxXp = playersSorted[0].xp;
-    
+
         playersSorted.forEach(player => {
             const barWidth = maxXp > 0 ? (player.xp / maxXp) * barMaxWidth : barMaxWidth;
             const barSize = 35;
             const color = [colors.playerYellow, colors.team1, colors.team2][player.team] ?? colors.crafting;
-    
+
             ctx.textAlign = "left";
             ctx.textBaseline = "middle";
-    
+
             drawBar(x, x + barMaxWidth, y, barSize, colors.lighterBlack);
             drawBar(x, x + barWidth, y, barSize * 0.75, color);
-    
+
             let w = x + text(`${player.username} - ${formatLargeNumber(player.xp.toFixed(2))}`, x, y, barSize * 0.5, colors.white);
             w += text(` (${net.state.tiers[player.highestRarity].name.charAt(0)}.)`, w, y, barSize * 0.5, net.state.tiers[player.highestRarity].color);
-    
-    
+
+
             x -= 45
             setStyle(color, 4);
             ctx.beginPath();
             ctx.arc(x, y, 20, 0, 2 * Math.PI);
             ctx.fill();
             ctx.stroke();
-    
+
             ctx.translate(x, y)
             drawFace(7, -Math.PI / 4, 1.7, 1.7, 1);
             ctx.translate(-x, -y)
-    
+
             y += spacing + 15;
             x += 45
         });
@@ -1865,7 +1865,7 @@ function draw() {
                         processInventoryDrop();
                         menu.classList.toggle("active");
                     };
-                } 
+                }
             }
         });
     }
@@ -1875,22 +1875,22 @@ function draw() {
     { // Hovers
         net.state.petalHoverAlpha ??= 0;
         net.state.lastPetalHover ??= null;
-        
+
         if (net.state.petalHover !== null) {
             net.state.lastPetalHover = [...net.state.petalHover];
             net.state.petalHoverAlpha += .25;
         } else {
             net.state.petalHoverAlpha -= .25;
         }
-    
+
         net.state.petalHoverAlpha = Math.max(0, Math.min(1, net.state.petalHoverAlpha));
-    
+
         if (net.state.lastPetalHover) {
             ctx.save();
             const img = petalTooltip(...net.state.lastPetalHover);
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = "high";
-        
+
             if (net.state.petalHoverAlpha > 0) {
                 ctx.globalAlpha = net.state.petalHoverAlpha;
                 let bw = 350;
@@ -1898,14 +1898,14 @@ function draw() {
 
                 let x = net.state.lastPetalHover[2] - 150;
                 let y = net.state.lastPetalHover[3] - bh - 10;
-    
+
                 x = Math.max(0, Math.min(x, width - bw));
-            
+
                 ctx.drawImage(img, x, y, bw, bh);
             }
-        
+
             ctx.restore();
-        
+
             if (net.state.petalHoverAlpha === 0) {
                 net.state.lastPetalHover = null;
             }
@@ -1913,37 +1913,37 @@ function draw() {
 
         net.state.mobHoverAlpha ??= 0;
         net.state.lastMobHover ??= null;
-        
+
         if (net.state.mobHover !== null) {
             net.state.lastMobHover = [...net.state.mobHover];
             net.state.mobHoverAlpha += .25;
         } else {
             net.state.mobHoverAlpha -= .25;
         }
-    
+
         net.state.mobHoverAlpha = Math.max(0, Math.min(1, net.state.mobHoverAlpha));
-    
+
         if (net.state.lastMobHover) {
             ctx.save();
             const img = mobTooltip(...net.state.lastMobHover);
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = "high";
-        
+
             if (net.state.mobHoverAlpha > 0) {
                 ctx.globalAlpha = net.state.mobHoverAlpha;
                 let bw = 350;
                 let bh = -350 * img.height / img.width;
-            
+
                 let x = net.state.lastMobHover[2];
                 let y = net.state.lastMobHover[3] - bh;
-    
+
                 x = Math.max(0, Math.min(x, width - bw));
-            
+
                 ctx.drawImage(img, x, y, bw, bh);
             }
-        
+
             ctx.restore();
-        
+
             if (net.state.mobHoverAlpha === 0) {
                 net.state.lastMobHover = null;
             }
@@ -2022,26 +2022,26 @@ function draw() {
             element.style.padding = `10px`;
             element.style.backgroundColor = `white`;
             element.style.border = "4px solid black";
-        
+
             const overlayX = 66;
             const overlayY = canvas.height - 455;
             const overlayWidth = 250;
             const overlayHeight = 400;
-        
+
             ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
             ctx.beginPath();
             ctx.roundRect(overlayX, overlayY, overlayWidth, overlayHeight, 4);
             ctx.fill();
-        
+
             ctx.textAlign = "left";
             ctx.textBaseline = "top";
-        
+
             let y = overlayY + overlayHeight - 3;
-        
+
             for (let i = net.ChatMessage.allMessages.length - 1; i >= 0; i--) {
                 const msg = net.ChatMessage.allMessages[i];
                 let msgHeight;
-        
+
                 switch (msg.type) {
                     case 0: // Chat
                         const nameWidth = text(msg.username, overlayX + 7, 50000, 14, msg.color);
@@ -2052,14 +2052,14 @@ function draw() {
                         msgHeight = drawWrappedText(msg.message, overlayX + 7, 50000, 14, overlayWidth - 20, msg.color, ctx, 73);
                         break;
                 }
-        
+
                 y -= msgHeight + 3;
-        
+
                 if (y < overlayY + 7) {
                     net.ChatMessage.allMessages.splice(i, 1);
                     continue;
                 }
-        
+
                 switch (msg.type) {
                     case 0:
                         const nameWidth2 = text(msg.username, overlayX + 7, y, 14, msg.color);
@@ -2078,22 +2078,22 @@ function draw() {
             net.ChatMessage.element.style.display = "none";
             text("Press Enter to open chat", 81, canvas.height - 31, 14);
         }
-        
+
         ctx.textBaseline = "top";
         y -= heights[heights.length - 1];
 
         if (!net.ChatMessage.showInput) {
             for (let i = messages.length - 1; i >= 0; i--) {
                 const message = messages[i];
-    
+
                 message.y = lerp(message.y, y, .2);
                 message.ticker++;
-    
+
                 if (message.ticker > (clientDebug.fps * 15) - messages.length * 2) {
                     net.ChatMessage.messages.splice(i, 1);
                     continue;
                 }
-    
+
                 switch (message.type) {
                     case 0: // Chat
                         const nameWidth = text(message.username, 66, message.y, 15, message.color);
@@ -2103,7 +2103,7 @@ function draw() {
                         drawWrappedText(message.message, 66, message.y, 15, 235, message.color, ctx, 66);
                         break;
                 }
-    
+
                 if (i > 0) {
                     y -= heights[i - 1];
                     y -= 2.5;
@@ -2131,23 +2131,23 @@ showMenus();
 loadAndRenderChangelogs();
 
 async function getUserFromSession() {
-  try {
-    const res = await fetch(`${process.env.AUTH_SERVER}/api/me`, {
-      method: "GET",
-      credentials: "include",  
-      headers: {"Accept": "application/json"}
-    });
+    try {
+        const res = await fetch(`${process.env.AUTH_SERVER}/api/me`, {
+            method: "GET",
+            credentials: "include",
+            headers: { "Accept": "application/json" }
+        });
 
-    if (!res.ok) throw new Error("Not logged in");
+        if (!res.ok) throw new Error("Not logged in");
 
-    const user = await res.json();
-    console.log("Logged in as:", user.username + "#" + user.discriminator);
-    return user;
-  } catch (e) {
-    console.error(e)
-    console.log("Not logged in");
-    return null;
-  }
+        const user = await res.json();
+        console.log("Logged in as:", user.username + "#" + user.discriminator);
+        return user;
+    } catch (e) {
+        console.error(e)
+        console.log("Not logged in");
+        return null;
+    }
 }
 
 // Call it anywhere
