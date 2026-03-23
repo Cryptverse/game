@@ -224,6 +224,16 @@ function updateButtons() {
 updateButtons();
 window.addEventListener("resize", updateButtons);
 
+let resizeTimeout;
+
+window.addEventListener("resize", () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        drawIconsToOffscreen(net.state.waveInfo.aliveMobs);
+    }, 150);
+});
+
+
 function drawButtons(ctx) {
     ctx.globalAlpha = .2;
     ctx.beginPath();
@@ -1681,14 +1691,6 @@ function draw() {
                 drawIconsToOffscreen(net.state.waveInfo.aliveMobs);
                 net.state.aliveMobs2 = JSON.parse(JSON.stringify(net.state.waveInfo.aliveMobs));
             }
-            let resizeTimeout;
-            
-            window.addEventListener("resize", () => {
-                clearTimeout(resizeTimeout);
-                resizeTimeout = setTimeout(() => {
-                    drawIconsToOffscreen(net.state.waveInfo.aliveMobs);
-                }, 150);
-            });
         
             ctx.drawImage(mobIconCanvas, 0, 0);
 
