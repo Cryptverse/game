@@ -1,14 +1,6 @@
 import { tiers as _tiers, Drawing, WEARABLES, PetalTier, MobTier, PetalConfig, MobDrop, MobConfig } from "../../lib/protocol.js";
 export const tiers = structuredClone(_tiers);
-export {
-    Drawing,
-    WEARABLES,
-    PetalTier,
-    MobTier,
-    PetalConfig,
-    MobDrop,
-    MobConfig
-};
+export { Drawing, WEARABLES, PetalTier, MobTier, PetalConfig, MobDrop, MobConfig };
 
 export const petalConfigs = [
     new PetalConfig("Basic", 22.5 * 1, 10, 10)
