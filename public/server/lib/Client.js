@@ -1073,7 +1073,7 @@ export default class Client {
                 let moverRarity = reader.getUint8();
                 let moverPetalIndex = reader.getUint8();
 
-                let inventoryRarity = tiers[moverRarity]?.name
+                let inventoryRarity = tiers[moverRarity]?.name;
                 
                 switch (moverType) {
                     case 0: // Slots
