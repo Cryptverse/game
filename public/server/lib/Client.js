@@ -1077,6 +1077,7 @@ export default class Client {
                 
                 switch (moverType) {
                     case 0: // Slots
+                        if (!this.inventory[tiers[moveeRarity].name][moveeIndex] || this.slots[moverIndex].id !== moverPetalIndex || this.slots[moverIndex].rarity !== moverRarity) return;
                         if (!this.inventory[inventoryRarity][moverPetalIndex]) {
                             this.inventory[inventoryRarity][moverPetalIndex] = 0;
                         }
@@ -1089,6 +1090,7 @@ export default class Client {
                         this.inventory[tiers[moveeRarity].name][moveeIndex]--;
                         break;
                     case 1: // Secondary slots
+                        if (!this.inventory[tiers[moveeRarity].name][moveeIndex] || (moverPetalIndex !== 255 && this.secondarySlots[moverIndex]?.id !== moverPetalIndex || this.secondarySlots[moverIndex]?.rarity !== moverRarity)) return;
                         if (moverPetalIndex === 255) {
                             this.secondarySlots[moverIndex] = {
                                 id: moveeIndex,
@@ -1108,8 +1110,8 @@ export default class Client {
                         this.inventory[tiers[moveeRarity].name][moveeIndex]--;
                         break;
                     case 2: // Secondary slot into inventory
-                        moverPetalIndex = this.secondarySlots[moverIndex].id;
-                        inventoryRarity = tiers[this.secondarySlots[moverIndex].rarity]?.name
+                        moverPetalIndex = this.secondarySlots[moverIndex]?.id;
+                        inventoryRarity = tiers[this.secondarySlots[moverIndex]?.rarity]?.name
                         
                         if (!this.inventory[inventoryRarity][moverPetalIndex]) {
                             this.inventory[inventoryRarity][moverPetalIndex] = 0;
