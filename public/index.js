@@ -1845,8 +1845,8 @@ function draw() {
         net.state.petalElements.forEach(petal => {
             const rect = petal.icon.getBoundingClientRect();
             const menuRect = menu.getBoundingClientRect();
-            const mouseX = mouse.x;
-            const mouseY = mouse.y;
+            const mouseX = mouse.x / window.devicePixelRatio;
+            const mouseY = mouse.y / window.devicePixelRatio;
             if (mouseX >= rect.left && mouseX <= rect.right && mouseY >= rect.top && mouseY <= rect.bottom) {
                 // net.state.petalHover = [petal.index, petal.rarity, x, y];
                 if (!inventoryDragConfig.enabled && !dragConfig.enabled && !joystick.on && mouse.left && rect.y > menuRect.top) {
