@@ -213,7 +213,7 @@ function drawWing(ctx = _ctx, hit = false) {
     ctx.rotate(Math.PI / -4);
     setStyle(ctx, mixColors(colors.white, "#FF0000", hit * .5), .2);
     ctx.beginPath();
-    ctx.arc(0, 0, 1, 0, Math.PI * 1.1);
+    ctx.arc(0, 0, 1, -Math.PI * 0.11, Math.PI * 1.1);
     ctx.quadraticCurveTo(0, .8, .9, -.3);
     ctx.closePath();
     ctx.fill();
