@@ -1,3 +1,7 @@
+# Update (05/3/2026)
+- Fixed some drawing bugs (Thanks to @Fubuki and @K3)
+- Added 3 new drawing options: quadraticCurveTo, bezierCurveTo, rotate
+
 # Update (11/29/2025)
 - Hundreds of petal/mob rebalances
 - Bone now has proper armor and can now be given to mobs as well
