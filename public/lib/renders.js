@@ -1810,6 +1810,12 @@ function petalRender(index, hit, ctx, id, size) {
                     ctx.ellipse(args[0], args[1], args[2], args[3], arg4, 0, Math.PI * 2);
                     break;
                 }
+                case "quadraticCurveTo":
+                    ctx.quadraticCurveTo(args[0], args[1], args[2], args[3]);
+                    break;
+                case "bezierCurveTo":
+                    ctx.bezierCurveTo(args[0], args[1], args[2], args[3], args[4], args[5]);
+                    break;
                 default:
                     ctx[actionFunc](...args);
                     break;
