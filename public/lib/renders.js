@@ -1241,12 +1241,13 @@ function drawStarfishPetal(ctx = _ctx, hit = false) {
 }
 
 function drawFangPetal(ctx = _ctx, hit = false) {
-    setStyle(ctx, mixColors(colors.evilLadybugRed, "#FF0000", hit * .5), .2);
+    setStyle(ctx, mixColors(colors.evilLadybugRed, "#FF0000", hit * .5), .25);
+    ctx.rotate(-Math.PI / 4);
     ctx.beginPath();
-    ctx.moveTo(1, 0);
-    ctx.lineTo(0, -.5);
-    ctx.lineTo(-1, 0);
-    ctx.lineTo(0, .5);
+    ctx.moveTo(-1, 0);
+    ctx.lineTo(0, .375);
+    ctx.lineTo(1, 0);
+    ctx.lineTo(0, -.375);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
