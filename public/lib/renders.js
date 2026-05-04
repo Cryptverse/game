@@ -2191,8 +2191,9 @@ export function drawUIPetal(index, rarity, ctx = _ctx) {
             break;
         default:
             if (state.petalConfigs[index].icon) {
-                let count = state.petalConfigs[index].icon.count;
-                let size = state.petalConfigs[index].icon.size;
+                let icon = state.petalConfigs[index].icon;
+                let count = icon.count;
+                let size = icon.size;
                 if (count > 1) {
                     for (let i = 0; i < count; i++) {
                         const angle = TAU / count * i;
@@ -2206,6 +2207,7 @@ export function drawUIPetal(index, rarity, ctx = _ctx) {
                     }
                 } else {
                     ctx.save();
+                    ctx.rotate(icon.rotation);
                     ctx.scale(size, size);
                     drawPetal(index, false, ctx);
                     ctx.restore();
