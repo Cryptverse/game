@@ -907,33 +907,39 @@ export function drawArmor(ctx = _ctx, hit = false) {
 }
 
 function drawJelly(ctx = _ctx, hit = false) {
-    setStyle(ctx, mixColors(colors.jelly, "#FF0000", hit * .5), .15);
+    setStyle(ctx, mixColors("#FBBAFF", "#FF0000", hit * .5), .2);
 
     ctx.beginPath();
     ctx.arc(0, 0, 1, 0, TAU);
     ctx.closePath();
-    ctx.globalAlpha = .7;
+    ctx.globalAlpha = .6;
     ctx.fill();
     ctx.globalAlpha = 1;
     ctx.stroke();
 
-    ctx.fillStyle = ctx.strokeStyle;
-    ctx.globalAlpha = .7;
-    ctx.beginPath();
-    ctx.arc(-.1, .35, .4, 0, TAU);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(.5, -.4, .2, 0, TAU);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(-.4, -.3, .3, 0, TAU);
-    ctx.closePath();
-    ctx.fill();
-    ctx.closePath();
-
+    ctx.fillStyle = mixColors("#d4b4d3", "#FF0000", hit * .5);
     ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.arc(.25, .45, .35, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(-.55, .3, .2, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(.3, -.25, .2, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(-.4, -.25, .25, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, -.9, .35, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.closePath();
 }
 
 function drawYggdrasil(ctx = _ctx, hit = false) {
@@ -1783,7 +1789,7 @@ function petalRender(index, hit, ctx, id, size) {
                     break;
                 }
                 case "opacity":
-                    ctx.globalAlpha *= args[0];
+                    ctx.globalAlpha = args[0];
                     break;
                 case "blur":
                     ctx.shadowColor = args[0];
