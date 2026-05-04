@@ -553,11 +553,12 @@ export class PetalConfig {
 
         return this;
     }
-    setIcon(size, count, name) {
+    setIcon(size, count, name, rotation) {
         this.icon = {
             size,
             count,
-            name
+            name,
+            rotation: rotation * Math.PI / 180
         }
         return this;
     }
@@ -1504,7 +1505,8 @@ export function encodePetalConfig(config) {
         output.push(
             config.icon.size,
             config.icon.count,
-            config.icon.name
+            config.icon.name,
+            config.icon.rotation
         );
     }
 
@@ -1720,7 +1722,8 @@ export function decodePetalConfig(data, nTiers) {
         output.icon = {
             size: data.shift(),
             count: data.shift(),
-            name: data.shift()
+            name: data.shift(),
+            rotation: data.shift()
         }
     }
 
