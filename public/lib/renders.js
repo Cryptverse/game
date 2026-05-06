@@ -147,23 +147,17 @@ function drawHeavy(ctx = _ctx, hit = false) {
 }
 
 function drawRice(ctx = _ctx, hit = false) {
-    setStyle(ctx, mixColors(colors.white, "#FF0000", hit * .5), 1);
+    setStyle(ctx, mixColors(colors.white, "#FF0000", hit * .5), .7);
     ctx.rotate(Math.PI/4)
-    ctx.scale(.7 , .7)
     
     ctx.beginPath();
-    ctx.moveTo(-1, 0);
-    ctx.quadraticCurveTo(0, -.4, 1, 0);
+    ctx.moveTo(-.7, 0);
+    ctx.quadraticCurveTo(0, -.5, .7, 0);
     ctx.stroke();
-    ctx.closePath();
 
     ctx.strokeStyle = ctx.fillStyle;
-    ctx.lineWidth /= 2
-    ctx.beginPath();
-    ctx.moveTo(-1, 0);
-    ctx.quadraticCurveTo(0, -.4, 1, 0);
+    ctx.lineWidth = 0.4;
     ctx.stroke();
-    ctx.closePath();
 }
 
 function drawRockP(ctx = _ctx, hit = false) {
@@ -213,8 +207,8 @@ function drawWing(ctx = _ctx, hit = false) {
     ctx.rotate(Math.PI / -4);
     setStyle(ctx, mixColors(colors.white, "#FF0000", hit * .5), .2);
     ctx.beginPath();
-    ctx.arc(0, 0, 1, -Math.PI * 0.11, Math.PI * 1.1);
-    ctx.quadraticCurveTo(0, .8, .9, -.3);
+    ctx.arc(0, 0, 1, -0.63, Math.PI * 1.2);
+    ctx.quadraticCurveTo(0, .6, .77, -.63);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
@@ -307,7 +301,7 @@ function drawCorn(ctx = _ctx, hit = false) {
     ctx.moveTo(.85, .85);
     ctx.quadraticCurveTo(1.3, 0, .85, -.85);
     ctx.bezierCurveTo(.55, -1.3, -.05, -.95, -.9, -.65);
-    ctx.quadraticCurveTo(0, 0, -.9, .65);
+    ctx.quadraticCurveTo(-.1, 0, -.9, .65);
     ctx.bezierCurveTo(-.05, .95, .55, 1.3, .85, .85);
     ctx.closePath();
     ctx.fill();
@@ -576,7 +570,7 @@ export function drawThirdEye(ctx = _ctx, hit = false) {
 }
 
 function drawPincer(ctx = _ctx, hit = false) {
-    setStyle(ctx, mixColors(colors.lighterBlack, "#FF0000", hit * .5), .2);
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .2);
     ctx.beginPath();
     ctx.moveTo(-1, -.2);
     ctx.quadraticCurveTo(-.2, -.95, .9, .2);
@@ -849,7 +843,7 @@ function drawYucca(ctx = _ctx, hit = false) {
 
     ctx.beginPath();
     ctx.moveTo(1, 0);
-    ctx.quadraticCurveTo(.4, -.4, -1, 0);
+    ctx.quadraticCurveTo(.3, -.3, -1, 0);
     ctx.stroke();
 }
 
@@ -1221,7 +1215,7 @@ function drawBubblePetal(ctx = _ctx, hit = false) {
 }
 
 function drawStarfishPetal(ctx = _ctx, hit = false) {
-    setStyle(ctx, mixColors(colors.starfish, "#FF0000", hit * .5), .125);
+    setStyle(ctx, mixColors(colors.starfish, "#FF0000", hit * .5), .2);
 
     ctx.beginPath();
     ctx.moveTo(-1.2, -.5);
@@ -1237,11 +1231,11 @@ function drawStarfishPetal(ctx = _ctx, hit = false) {
     ctx.fillStyle = mixColors(ctx.fillStyle, colors.white, .3);
 
     ctx.beginPath();
-    ctx.arc(-.75, 0, .4, 0, TAU);
-    ctx.moveTo(0, 0);
-    ctx.arc(0, 0, .3, 0, TAU);
-    ctx.moveTo(.667, 0);
-    ctx.arc(.667, 0, .2, 0, TAU);
+    ctx.arc(-.7, 0, .325, 0, TAU);
+    ctx.moveTo(.125, 0);
+    ctx.arc(.125, 0, .25, 0, TAU);
+    ctx.moveTo(.8, 0);
+    ctx.arc(.8, 0, .2, 0, TAU);
     ctx.fill();
     ctx.closePath();
 }
@@ -2082,10 +2076,22 @@ export function drawUIPetal(index, rarity, ctx = _ctx) {
         case 4: // Stinger
             drawStinger(ctx, index, rarity);
             break;
+        case 8: // Leaf
+            ctx.save();
+            ctx.rotate(-Math.PI / 4);
+            drawLeaf(ctx);
+            ctx.restore();
+            break;
         case 10: // Bone
             ctx.save();
             ctx.scale(1.25, 1.25);
             drawBone(ctx);
+            ctx.restore();
+            break;
+        case 13: // Corn
+            ctx.save();
+            ctx.rotate(-Math.PI / 4);
+            drawCorn(ctx);
             ctx.restore();
             break;
         case 14: // Sand
@@ -2093,6 +2099,12 @@ export function drawUIPetal(index, rarity, ctx = _ctx) {
             break;
         case 15: // Orange
             drawOranges(ctx, index, rarity);
+            break;
+        case 16: // Missile
+            ctx.save();
+            ctx.rotate(-Math.PI / 4);
+            drawMissile(ctx);
+            ctx.restore();
             break;
         case 18: // Basic
             drawBasicPetals(ctx, index, rarity, 0.8, colors.rosePink);
@@ -2115,7 +2127,7 @@ export function drawUIPetal(index, rarity, ctx = _ctx) {
             break;
         case 29: // Peas
             ctx.save();
-            ctx.scale(.9, .9);
+            ctx.scale(.85, .85);
             drawPeas(ctx, 0, colors.peaGreen, index);
             ctx.restore();
             break;
@@ -2134,6 +2146,12 @@ export function drawUIPetal(index, rarity, ctx = _ctx) {
         case 38: // Ant Egg
             drawAntEgg(ctx, index, rarity);
             break;
+        case 39: // Yucca
+            ctx.save();
+            ctx.rotate(-Math.PI / 4);
+            drawYucca(ctx);
+            ctx.restore();
+            break;
         case 45: // Dandelion
             drawDandyIcon(ctx, index, rarity);
             break;
@@ -2147,6 +2165,12 @@ export function drawUIPetal(index, rarity, ctx = _ctx) {
             ctx.save();
             ctx.scale(1.25, 1.25);
             drawPearl(ctx);
+            ctx.restore();
+            break;
+        case 51: // Starfish
+            ctx.save();
+            ctx.rotate(-Math.PI / 4);
+            drawStarfishPetal(ctx);
             ctx.restore();
             break;
         case 53: // Goo
@@ -2167,7 +2191,7 @@ export function drawUIPetal(index, rarity, ctx = _ctx) {
             break;
         case 62: // Grapes
             ctx.save();
-            ctx.scale(.9, .9);
+            ctx.scale(.85, .85);
             drawPeas(ctx, 0, colors.irisPurple, index);
             ctx.restore();
             break;
