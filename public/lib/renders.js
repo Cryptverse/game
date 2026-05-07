@@ -908,6 +908,7 @@ function drawJelly(ctx = _ctx, hit = false) {
     ctx.closePath();
     ctx.globalAlpha = .6;
     ctx.fill();
+    ctx.strokeStyle = mixColors("#d4b4d3", "#FF0000", hit * .5);
     ctx.globalAlpha = 1;
     ctx.stroke();
 
