@@ -4189,25 +4189,40 @@ function drawShrub(id, color, ctx = _ctx, hit = false) {
     };
 }
 
-const PumpkinPath = new Path2D("M.7247-.3319C.6942-.3316.6609-.3288.6245-.3232.1584-.2507 0 0 0 0S.1584.2507.6245.3232C1.0907.3956 1.0457 0 1.0457 0S1.0839-.3362.7247-.3319Z");
-function drawPumpkin(color, altColor, ctx, hit) {
-    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .125);
-
-    for (let i = 0; i < 10; i++) {
-        ctx.fill(PumpkinPath);
-        ctx.stroke(PumpkinPath);
-        ctx.rotate(TAU / 10);
-    }
-
-    setStyle(ctx, mixColors(altColor, "#FF0000", hit * .5), .1);
+function drawPumpkin(color, altColor, ctx, hit, id) {
+    const sides = (id % 3) + 5
+    setStyle(ctx, mixColors(mixColors(color, "#000000", .1), "#FF0000", hit * .5), .2);
     ctx.beginPath();
-    polygon(ctx, 7, .25, 0);
+    dipPolygon(ctx, sides, 1, -5/3, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .2);
+    ctx.beginPath();
+    dipPolygon(ctx, sides, .75, -5/3, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    setStyle(ctx, mixColors(mixColors(color, "#000000", .1), "#FF0000", hit * .5), .2);
+    ctx.beginPath();
+    for (let count = 0; count < sides; count++) {
+        ctx.moveTo(.75, 0)
+        ctx.lineTo(1, 0)
+        ctx.rotate(TAU / sides);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    setStyle(ctx, mixColors(altColor, "#FF0000", hit * .5), .2);
+    ctx.beginPath();
+    dipPolygon(ctx, 3, .25, -1, ((id % 3) + 1) * .3);
     ctx.fill();
     ctx.stroke();
     ctx.closePath();
 }
 
-function drawJackOLantern(color, altColor, ctx, hit, date) {
+function drawJackOLantern(color, altColor, ctx, hit, date, id) {
     // Fire animation
     ctx.save();
     ctx.globalAlpha *= .5;
@@ -4228,7 +4243,7 @@ function drawJackOLantern(color, altColor, ctx, hit, date) {
     ctx.fill();
     ctx.restore();
 
-    drawPumpkin(color, altColor, ctx, hit);
+    drawPumpkin(color, altColor, ctx, hit, id);
 }
 
 const crabBodyColors = [
@@ -4716,10 +4731,10 @@ function mobRender(ctx, id, index, rarity, hit, attack, friend, rot, extra, date
             drawShrub(id, mixColors(friend ? colors.playerYellow : colors.rockGray, "#000000", .25 + Math.sin(id * 1000) * .125), ctx, hit);
             break;
         case 70:
-            drawPumpkin(friend ? colors.playerYellow : colors.ancient, colors.cactusGreen, ctx, hit);
+            drawPumpkin(friend ? colors.playerYellow : "#D97232", colors.peaGreen, ctx, hit, id);
             break;
         case 71:
-            drawJackOLantern(friend ? colors.playerYellow : colors.ancient, colors.cactusGreen, ctx, hit, date);
+            drawJackOLantern(friend ? colors.playerYellow : "#D97232", colors.peaGreen, ctx, hit, date, id);
             break;
         case 72:
             drawCrab(ctx, friend, id, attack, hit, date)
