@@ -1838,7 +1838,7 @@ function draw() {
         if (menu.classList.contains("active")) {
             drawInventory();
         }
-        net.state.inventoryDirty = false;
+        net.state.inventory2 = JSON.parse(JSON.stringify(net.state.inventory));
     }
 
     if (menu.classList.contains("active") && net.state.petalElements) {
