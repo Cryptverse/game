@@ -2160,13 +2160,12 @@ export function drawUIPetal(index, rarity, ctx = _ctx) {
             ctx.restore();
             break;
         default:
-            const petal = state.petalConfigs[index];
-            const tier = petal.tiers[rarity];
-            
+            const tier = state.petalConfigs[index].tiers[rarity];
             if (tier.icon) {
                 let icon = tier.icon;
                 let count = icon.count;
                 let size = icon.size;
+                
                 if (count > 1) {
                     for (let i = 0; i < count; i++) {
                         const angle = TAU / count * i;
@@ -2203,7 +2202,12 @@ function getUIPetalName(index) {
         case 67:
             return "Eggs";
         default:
-            return state.petalConfigs[index].icon?.name ?? state.petalConfigs[index].name;
+            const tier = state.petalConfigs[index].tiers[rarity];
+            let name = state.petalConfigs[index].name;
+            if (tier.icon) {
+                name = tier.icon.name
+            }
+            return name;
     }
 }
 
