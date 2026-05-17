@@ -939,35 +939,27 @@ function drawJelly(ctx = _ctx, hit = false) {
 
 function drawYggdrasil(ctx = _ctx, hit = false) {
     const innerColor = mixColors("#aa853f", "#FF0000", hit * .5);
-    const outerColor = mixColors("#876e36", "#FF0000", hit * .5);
-
-    // Outer color
-    ctx.lineCap = "round";
+    const outerColor = mixColors("#886a32", "#FF0000", hit * .5);
+    // Inner color
     ctx.strokeStyle = outerColor;
     ctx.fillStyle = outerColor;
-    ctx.beginPath(); // Stem
+    ctx.lineWidth = .4;
+    
+    // Stem
+    ctx.beginPath();
     ctx.moveTo(1.13, .54);
     ctx.quadraticCurveTo(1.20, .6, 1.16, .69);
     ctx.quadraticCurveTo(1.13, .8, 1.03, .81);
     ctx.quadraticCurveTo(-.52, .14, -.63, -1.13);
     ctx.lineTo(-.56, -1.13);
     ctx.quadraticCurveTo(-.1, .38, 1.13, .54);
-    ctx.lineWidth = .4;
-    ctx.fill();
-    ctx.stroke();
-    ctx.closePath();
-
-    ctx.beginPath(); // Curvy leaf
+    // Curvy leaf
     ctx.moveTo(.72, .54);
     ctx.quadraticCurveTo(.3, .97, -.49, .13);
     ctx.quadraticCurveTo(-.92, -.44, -.57, -.98);
     ctx.quadraticCurveTo(-.2, -1.01, .24, -.8);
     ctx.quadraticCurveTo(1.31, -.2, .72, .54);
-    ctx.fill();
-    ctx.closePath();
-
-    ctx.beginPath(); // Spines
-    ctx.lineWidth = .4;
+    // Spines
     ctx.moveTo(.97, -.14);
     ctx.quadraticCurveTo(.91, .24, .72, .54);
     ctx.moveTo(.82, -.47);
@@ -1001,71 +993,24 @@ function drawYggdrasil(ctx = _ctx, hit = false) {
     ctx.quadraticCurveTo(.15, .6, .49, .47);
     ctx.moveTo(.26, .72);
     ctx.quadraticCurveTo(.5, .72, .72, .54);
+    ctx.fill();
     ctx.stroke();
-
-    // Inner color
+    
     ctx.strokeStyle = innerColor;
     ctx.fillStyle = innerColor;
-    ctx.beginPath(); // Stem
+    ctx.lineWidth = .125;
+    ctx.stroke();
+
+    // Stem
+    ctx.beginPath();
     ctx.moveTo(1.13, .54);
     ctx.quadraticCurveTo(1.20, .6, 1.16, .69);
     ctx.quadraticCurveTo(1.13, .8, 1.03, .81);
     ctx.quadraticCurveTo(-.52, .14, -.63, -1.13);
     ctx.lineTo(-.56, -1.13);
     ctx.quadraticCurveTo(-.1, .38, 1.13, .54);
-    ctx.lineWidth = .1;
-    ctx.stroke();
     ctx.fill();
-    ctx.closePath();
-
-    ctx.lineCap = "square";
-    ctx.beginPath(); // Curvy leaf
-    ctx.lineWidth = .1;
-    ctx.moveTo(.72, .54);
-    ctx.quadraticCurveTo(.3, .97, -.49, .13);
-    ctx.quadraticCurveTo(-.92, -.44, -.57, -.98);
-    ctx.quadraticCurveTo(-.2, -1.01, .24, -.8);
-    ctx.quadraticCurveTo(1.31, -.2, .72, .54);
     ctx.stroke();
-    ctx.closePath();
-
-    ctx.beginPath(); // Spines
-    ctx.lineWidth = .125;
-    ctx.moveTo(.97, -.14);
-    ctx.quadraticCurveTo(.91, .24, .72, .54);
-    ctx.moveTo(.82, -.47);
-    ctx.quadraticCurveTo(.78, -.13, .61, .38);
-    ctx.moveTo(.66, -.7);
-    ctx.quadraticCurveTo(.64, -.38, .43, .26);
-    ctx.moveTo(.46, -.79);
-    ctx.quadraticCurveTo(.42, -.36, .22, .1);
-    ctx.moveTo(.26, -.92);
-    ctx.quadraticCurveTo(.21, -.59, .04, -.06);
-    ctx.moveTo(.02, -.97);
-    ctx.quadraticCurveTo(0, -.72, -.14, -.28);
-    ctx.moveTo(-.18, -1.04);
-    ctx.quadraticCurveTo(-.17, -.83, -.29, -.47);
-    ctx.moveTo(-.38, -1.07);
-    ctx.quadraticCurveTo(-.35, -.34, -.74, -.88);
-    ctx.moveTo(-.76, -.59);
-    ctx.quadraticCurveTo(-.61, -.49, -.4, -.46);
-    ctx.moveTo(-.78, -.34);
-    ctx.quadraticCurveTo(-.61, -.26, -.3, -.24);
-    ctx.moveTo(-.69, -.06);
-    ctx.quadraticCurveTo(-.47, -.04, -.15, -.09);
-    ctx.moveTo(-.65, .14);
-    ctx.quadraticCurveTo(-.47, .15, .05, .05);
-    ctx.moveTo(-.53, .33);
-    ctx.quadraticCurveTo(-.18, .32, .12, .2);
-    ctx.quadraticCurveTo(-.19, .31, .12, .2);
-    ctx.moveTo(-.35, .5);
-    ctx.quadraticCurveTo(.02, .47, .27, .35);
-    ctx.moveTo(-.08, .63);
-    ctx.quadraticCurveTo(.15, .6, .49, .47);
-    ctx.moveTo(.26, .72);
-    ctx.quadraticCurveTo(.5, .72, .72, .54);
-    ctx.stroke();
-    ctx.lineCap = "round";
 }
 
 function drawGlass(id, ctx = _ctx, hit = false) {
