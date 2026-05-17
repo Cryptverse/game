@@ -4810,7 +4810,7 @@ function createPetalTooltip(index, rarityIndex) {
     const tier = petal.tiers[rarityIndex];
 
     let width = 350,
-        height = 60 + drawWrappedText(petal.description, -10000, -10000, 15, width - 20) + 30;
+        height = 60 + drawWrappedText(tier.description, -10000, -10000, 15, width - 20) + 30;
 
     height += 17.5 * (
         (tier.health > 0) +
@@ -4883,7 +4883,7 @@ function createPetalTooltip(index, rarityIndex) {
     text(timerString, width - 10, 10, 17.5, "#FFFFFF", ctx);
     ctx.textAlign = "left";
 
-    let newY = 80 + drawWrappedText(petal.description, 10, 60, 15, width - 20, "#FFFFFF", ctx);
+    let newY = 80 + drawWrappedText(tier.description, 10, 60, 15, width - 20, "#FFFFFF", ctx);
 
     if (tier.health > 0) {
         let x = 10 + text("Health: ", 10, newY, 15, colors.common, ctx);
@@ -5153,7 +5153,7 @@ function createMobTooltip(index, rarityIndex) {
         (tier.lightning > 0) +
         (mob.damageReflection.reflection > 0) +
         (mob.damageReflection?.cap > 0) +
-        (tier.armor > 0) +
+        (tier.armor !== 0) +
         ((tier.projectile !== null) * 3) +
         (tier.projectile?.damage > 0) +
         (Number.isFinite(tier.projectile?.health)) +
