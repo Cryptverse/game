@@ -5153,7 +5153,7 @@ function createMobTooltip(index, rarityIndex) {
         (tier.lightning > 0) +
         (mob.damageReflection.reflection > 0) +
         (mob.damageReflection?.cap > 0) +
-        (tier.armor) +
+        (tier.armor > 0) +
         ((tier.projectile !== null) * 3) +
         (tier.projectile?.damage > 0) +
         (Number.isFinite(tier.projectile?.health)) +
