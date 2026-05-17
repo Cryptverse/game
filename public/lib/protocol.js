@@ -1531,7 +1531,6 @@ export function decodePetalConfig(data, nTiers) {
     const output = {
         id: data.shift(),
         name: data.shift(),
-        description: data.shift(),
         cooldown: data.shift(),
         tiers: [],
         drawing: undefined,
