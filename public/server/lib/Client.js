@@ -1,7 +1,7 @@
 import state from "./state.js";
 import { Entity, Mob, Player } from "./Entity.js";
 import { Reader, Writer, CLIENT_BOUND, ENTITY_FLAGS, ENTITY_MODIFIER_FLAGS, ROUTER_PACKET_TYPES, SERVER_BOUND, ENTITY_TYPES, DEV_CHEAT_IDS, WEARABLES } from "../../lib/protocol.js";
-import { mobConfigs, mobIDOf, petalConfigs, tiers } from "./config.js";
+import { mobConfigs, mobIDOf, petalConfigs, petalIDOf, tiers } from "./config.js";
 import { xpForLevel } from "../../lib/util.js";
 
 const blockList = [];
@@ -748,7 +748,8 @@ export default class Client {
 
         this.slots = new Array(5).fill(null).map(() => ({ id: 0, rarity: 0 }));
         this.slotRatios = new Array(5).fill(0).map(() => 0);
-        this.secondarySlots = new Array(5).fill(null).map(() => null);
+        // this.secondarySlots = new Array(5).fill(null).map(() => null); // REMOVED
+        this.secondarySlots = new Array(5).fill(null).map(() => ({ id: 0, rarity: 0})); // ADDITION
         this.level = 1;
         this.xp = 1;
 
@@ -865,6 +866,15 @@ export default class Client {
                 this.sendRoom();
                 state.sendTerrain(this.id);
                 tiers.forEach(tier => this.inventory[tier.name] = {});
+
+                // ADDITION
+                this.inventory[tiers[0].name][petalIDOf("Pistol")] = 10;
+                this.inventory[tiers[0].name][petalIDOf("Sand")] = 50;
+                this.inventory[tiers[0].name][petalIDOf("Light")] = 50;
+                this.inventory[tiers[0].name][petalIDOf("Stinger")] = 50;
+                this.inventory[tiers[0].name][petalIDOf("Faster")] = 10;
+                this.inventory[tiers[1].name][petalIDOf("Basic")] = 10;
+                // END
 
                 if (this.uuid === state.secretKey && this.masterPermissions < 1) this.nameColor = "#F5D230";
 

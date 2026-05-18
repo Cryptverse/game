@@ -1556,7 +1556,7 @@ export class Player extends Entity {
         this.lightVision = 2;
 
         // ADDITION
-        this.speed = 6;
+        this.speed = 8;
     }
 
     get level() {

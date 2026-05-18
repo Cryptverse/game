@@ -615,6 +615,7 @@ export class PetalConfig {
             petal: petalID,
             offset: offset
         }
+        return this;
     }
     
 }
