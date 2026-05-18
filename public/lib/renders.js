@@ -1,0 +1,5302 @@
+import { state } from "./net.js";
+import { ctx as _ctx, drawWrappedText, mixColors, roundedRectangle, text } from "./canvas.js";
+import { formatLargeNumber, colors, options } from "./util.js";
+import { Drawing, PetalConfig } from "./protocol.js";
+
+const TAU = Math.PI * 2;
+
+function setStyle(c, main, lineWidth = .1, mixStrength = .2) {
+    c.fillStyle = main;
+    c.strokeStyle = mixColors(main, "#000000", mixStrength);
+    c.lineWidth = lineWidth;
+}
+
+function dipPolygon(ctx, sides, r, dipMult, R) {
+    const dip = 1 - (7 / sides / sides) * dipMult;
+
+    ctx.beginPath();
+
+    ctx.moveTo(r, 0);
+
+    for (let i = 0; i < sides; i++) {
+        const theta = (i + 1) / sides * TAU;
+        const hTheta = (i + .5) / sides * TAU;
+
+        ctx.quadraticCurveTo(
+            Math.cos(hTheta + R) * dip * r,
+            Math.sin(hTheta + R) * dip * r,
+            Math.cos(theta + R) * r,
+            Math.sin(theta + R) * r
+        );
+    }
+
+    ctx.closePath();
+}
+
+function polygon(ctx, sides, r, R) {
+    ctx.beginPath();
+
+    const tTheta = TAU / sides;
+    for (let i = 0; i < sides; i++) {
+        const theta = i * tTheta;
+
+        ctx.lineTo(Math.cos(theta + R) * r, Math.sin(theta + R) * r);
+    }
+
+    ctx.closePath();
+}
+
+function spikeBall(ctx, sides, r, R) {
+    ctx.beginPath();
+
+    const tTheta = TAU / sides;
+    for (let i = 0; i < sides; i++) {
+        const theta = i * tTheta;
+
+        ctx.lineTo(Math.cos(theta + R) * r, Math.sin(theta + R) * r);
+        ctx.lineTo(Math.cos(theta + R + tTheta / 2) * r * .5, Math.sin(theta + R + tTheta / 2) * r * .5);
+    }
+
+    ctx.closePath();
+}
+
+function scorpionPincer(ctx) {
+    ctx.beginPath();
+    ctx.lineTo(0, 0);
+    ctx.quadraticCurveTo(.7, -.16, .64, -.22);
+    ctx.quadraticCurveTo(.64, -.35, -.03, -.2);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function basicPetal(ctx = _ctx, hit = false, col = colors.white, size = 7.5) {
+    setStyle(ctx, mixColors(col, "#FF0000", hit * .5), .225 * Math.max(10 / 7.5, 10 / size));
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawBasicPetals(ctx = _ctx, index, rarity, size = 1, color = colors.white) {
+    let count = state.petalConfigs[index].tiers[rarity].count;
+    setStyle(ctx, color, count > 1 ? .175 : .2);
+
+    if (count > 1) {
+        for (let i = count; i > 0; i--) {
+            const angle = TAU / count * i;
+
+            ctx.beginPath();
+            ctx.arc(Math.cos(angle) * .7, Math.sin(angle) * .7, size, 0, TAU);
+            ctx.fill();
+            ctx.stroke();
+            ctx.closePath();
+        }
+    } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, size, 0, TAU);
+        ctx.fill();
+        ctx.stroke();
+    }
+}
+
+function drawStinger(ctx = _ctx, index, rarity) {
+    let count = state.petalConfigs[index].tiers[rarity].count;
+    setStyle(ctx, colors.stingerBlack, .3, 0);
+
+    if (count > 1) {
+        for (let i = count; i > 0; i--) {
+            const angle = TAU / count * i;
+            const x = Math.cos(angle) * .65;
+            const y = Math.sin(angle) * .65;
+
+            ctx.translate(x, y);
+            polygon(ctx, 3, .5, angle);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.translate(-x, -y);
+        }
+    } else {
+        polygon(ctx, 3, .5, 0);
+        ctx.fill();
+        ctx.stroke();
+    }
+}
+
+function trianglePetal(ctx = _ctx, hit = false, col = colors.white) {
+    setStyle(ctx, mixColors(col, "#FF0000", hit * .5), .6, 0);
+    ctx.beginPath();
+    polygon(ctx, 3, .9, 0);
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawHeavy(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .2);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = colors.white;
+    ctx.beginPath();
+    ctx.arc(.25, -.25, .25, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawRice(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.white, "#FF0000", hit * .5), 1);
+    ctx.rotate(Math.PI/4)
+    ctx.scale(.7 , .7)
+    
+    ctx.beginPath();
+    ctx.moveTo(-1, 0);
+    ctx.quadraticCurveTo(0, -.4, 1, 0);
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.strokeStyle = ctx.fillStyle;
+    ctx.lineWidth /= 2
+    ctx.beginPath();
+    ctx.moveTo(-1, 0);
+    ctx.quadraticCurveTo(0, -.4, 1, 0);
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function drawRockP(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.rockGray, "#FF0000", hit * .5), .2);
+    polygon(ctx, 5, 1, 0);
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawCactusPetal(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.cactusGreen, "#FF0000", hit * .5), .2);
+    dipPolygon(ctx, 8, 1, 2.5, 0);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = mixColors(colors.cactusLightGreen, "#FF0000", hit * .5);
+    ctx.beginPath();
+    ctx.arc(0, 0, .5, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawLeaf(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.leafGreen, "#FF0000", hit * .5), .15);
+    ctx.beginPath();
+    ctx.moveTo(-.6609, .4525);
+    ctx.quadraticCurveTo(-.2989, .6336, .1536, .5431);
+    ctx.quadraticCurveTo(.5157, .4525, .7872, .2715);
+    ctx.quadraticCurveTo(1.104, .0453, .8777, -.181);
+    ctx.quadraticCurveTo(.6062, -.4525, .1536, -.5431);
+    ctx.quadraticCurveTo(-.2989, -.6336, -.7062, -.4073);
+    ctx.quadraticCurveTo(-1.2493, .0453, -.6609, .4525);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(.6, 0);
+    ctx.quadraticCurveTo(0, .1, -.6, 0);
+    ctx.moveTo(-1, 0);
+    ctx.quadraticCurveTo(-1.3, -.05, -1.35, -.1);
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function drawWing(ctx = _ctx, hit = false) {
+    ctx.rotate(Math.PI / -4);
+    setStyle(ctx, mixColors(colors.white, "#FF0000", hit * .5), .2);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, Math.PI * 1.1);
+    ctx.quadraticCurveTo(0, .8, .9, -.3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawBone(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(mixColors(colors.white, "#000000", .2), "#FF0000", hit * .5), .2);
+    
+    ctx.scale(.8, .8)
+    
+    ctx.beginPath();
+    ctx.arc(0.33, 0.93, 0.39, -Math.PI * 0.1, Math.PI * 1.05);
+    ctx.fill();
+    ctx.closePath();
+    ctx.beginPath();
+    ctx.arc(0.7, 0.69, 0.39, -Math.PI*0.45, Math.PI * 0.6);
+    ctx.fill();
+    ctx.closePath();
+    ctx.beginPath();
+    ctx.arc(-0.7, -0.67, 0.39, Math.PI*0.69, Math.PI * 1.8);
+    ctx.fill();
+    ctx.closePath();
+    ctx.beginPath();
+    ctx.arc(-0.32, -0.91, 0.39, Math.PI * 0.95, 0.1);
+    ctx.fill();
+    ctx.closePath();
+
+    setStyle(ctx, mixColors(colors.white, "#FF0000", hit * .5), .2);
+
+    ctx.beginPath();
+    ctx.arc(0.33, 0.93, 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.closePath();
+    ctx.beginPath();
+    ctx.arc(0.7, 0.69, 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.closePath();
+    ctx.beginPath();
+    ctx.arc(-0.7, -0.67, 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.closePath();
+    ctx.beginPath();
+    ctx.arc(-0.32, -0.91, 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.beginPath();
+    ctx.lineTo(0.035, 0.86);
+    ctx.quadraticCurveTo(-0.03, 0.07, -0.86, -0.41)
+    ctx.lineTo(-0.5, -0.78);
+    ctx.lineTo(-0.02, -0.86);
+    ctx.quadraticCurveTo(0.03, -0.07, 0.8, 0.42)
+    ctx.lineTo(0.51, 0.789);
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.beginPath();
+    ctx.lineTo(0.035, 0.86);
+    ctx.quadraticCurveTo(-0.03, 0.07, -0.86, -0.41)
+    ctx.moveTo(0.8, 0.42);
+    ctx.quadraticCurveTo(0.03, -0.07, -0.02, -0.86)
+    ctx.stroke()
+    ctx.closePath();
+}
+
+function drawDirt(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(mixColors(colors.scorpionBrown, colors.spider, .25), "#FF0000", .75 * hit), .3);
+
+    dipPolygon(ctx, 7, 1, 1.5, 0);
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawMagnolia(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.ladybugRed, "#FF0000", hit * .5), .2);
+    dipPolygon(ctx, 9, 1, 4, 0);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = mixColors(mixColors(colors.ladybugRed, colors.white, .2), "#FF0000", hit * .5);
+    ctx.beginPath();
+    ctx.arc(0, 0, .5, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawCorn(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.beeYellow, "#FF0000", hit * .5), .25);
+    ctx.beginPath();
+    ctx.moveTo(.85, .85);
+    ctx.quadraticCurveTo(1.3, 0, .85, -.85);
+    ctx.bezierCurveTo(.55, -1.3, -.05, -.95, -.9, -.65);
+    ctx.quadraticCurveTo(0, 0, -.9, .65);
+    ctx.bezierCurveTo(-.05, .95, .55, 1.3, .85, .85);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawSingleSand(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.sand, "#FF0000", hit * .5), .4);
+
+    polygon(ctx, 6, 1, 0);
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawSands(ctx = _ctx, index, rarity) {
+    let count = state.petalConfigs[index].tiers[rarity].count;
+    setStyle(ctx, colors.sand, .2);
+
+    if (count > 1) {
+        for (let i = 0; i < count; i++) {
+            const angle = TAU / count * i;
+    
+            ctx.save();
+            ctx.translate(Math.cos(angle) * .7, Math.sin(angle) * .7);
+            polygon(ctx, 6, .5, angle + Math.PI / 4);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        }
+    } else {
+        polygon(ctx, 6, .5, Math.PI / 4);
+        ctx.fill();
+        ctx.stroke();
+    }
+}
+
+function drawOrange(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.orange, "#FF0000", hit * .5), .2);
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    setStyle(ctx, mixColors(colors.leafGreen, "#FF0000", hit * .5), .2);
+
+    ctx.translate(0, .5)
+    ctx.beginPath();
+    ctx.moveTo(0, -1);
+    ctx.quadraticCurveTo(.7, -1.5, 1.4, -.9);
+    ctx.quadraticCurveTo(.6, -.5, 0, -1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawOranges(ctx = _ctx, index, rarity) {
+    let count = state.petalConfigs[index].tiers[rarity].count;
+    if (count > 1) {
+        for (let i = 0; i < count; i++) {
+            const angle = TAU / count * i;
+    
+            ctx.save();
+            ctx.translate(Math.cos(angle) * .6, Math.sin(angle) * .6);
+            ctx.scale(.8, .8);
+            ctx.rotate(Math.PI / 2 + angle)
+            drawOrange(ctx, false);
+            ctx.restore();
+        }
+    } else {
+        ctx.save();
+        ctx.scale(.9, .9);
+        drawOrange(ctx, false);
+        ctx.restore();
+    }
+}
+
+function drawMissile(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .6, 0)
+
+    ctx.scale(.8, .8);
+    ctx.beginPath();
+    ctx.moveTo(1, 0);
+    ctx.lineTo(-.9, -.667);
+    ctx.lineTo(-.9, .667);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawWaspMissile(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .6, 0);
+
+    ctx.scale(.8, .8);
+    ctx.beginPath();
+    ctx.moveTo(1, 0);
+    ctx.lineTo(-.9, -.775);
+    ctx.lineTo(-.9, .775);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawYinYang(ctx = _ctx, hit = false) {
+    const YINYANG_W = mixColors("#FFFFFF", "#FF0000", hit * .5);
+    const YINYANG_WB = mixColors("#EAEAEA", "#FF0000", hit * .5);
+    const YINYANG_B = mixColors("#333333", "#FF0000", hit * .5);
+    const YINYANG_BB = mixColors("#303030", "#FF0000", hit * .5);
+
+    ctx.lineWidth = .2;
+    ctx.fillStyle = YINYANG_W;
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU, false);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = YINYANG_B;
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, -Math.PI / 2, Math.PI / 2, false);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = YINYANG_B;
+    ctx.beginPath();
+    ctx.arc(0, .5, .5, 0, TAU, false);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = YINYANG_W;
+    ctx.beginPath();
+    ctx.arc(0, -.5, .5, 0, TAU, false);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = YINYANG_BB;
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, -Math.PI / 2, 0, false);
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.strokeStyle = YINYANG_WB;
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, -Math.PI / 2, Math.PI / 2, true);
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.strokeStyle = YINYANG_BB;
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, Math.PI / 2, false);
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.strokeStyle = YINYANG_BB;
+    ctx.beginPath();
+    ctx.arc(0, .5, .5, -Math.PI / 2, Math.PI / 2, true);
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.strokeStyle = YINYANG_WB;
+    ctx.beginPath();
+    ctx.arc(0, -.5, .5, -Math.PI / 2, Math.PI / 2, false);
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.fillStyle = YINYANG_W;
+    ctx.beginPath();
+    ctx.arc(0, .5, .15, 0, TAU, false);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = YINYANG_B;
+    ctx.beginPath();
+    ctx.arc(0, -.5, .15, 0, TAU, false);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawHoney(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.honeyGold, "#FF0000", hit * .5), .25);
+    polygon(ctx, 6, 1, 0);
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawWebPetal(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.white, "#FF0000", hit * .5), .2);
+    dipPolygon(ctx, 5, 1, 1.5, 0);
+    ctx.fill();
+    ctx.stroke();
+}
+
+// function drawWebMob(ctx = _ctx, friend = false) {
+//     setStyle(ctx, friend ? colors.cumWhite : colors.white, .1);
+//     dipPolygon(ctx, 13, 1, 5, 0);
+//     ctx.stroke();
+//     dipPolygon(ctx, 13, .8, 5, 0);
+//     ctx.stroke();
+//     dipPolygon(ctx, 13, .6, 5, 0);
+//     ctx.stroke();
+//     dipPolygon(ctx, 13, .4, 5, 0);
+//     ctx.stroke();
+
+//     ctx.beginPath();
+//     for (let i = 0; i < 13; i++) {
+//         ctx.moveTo(0, 0);
+//         ctx.lineTo(Math.cos(TAU / 13 * i) * 1.1, Math.sin(TAU / 13 * i) * 1.1);
+//     }
+//     ctx.stroke();
+//     ctx.closePath();
+// }
+
+function drawWebMob(ctx = _ctx, color = colors.white) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = .07;
+    ctx.globalAlpha *= .4;
+
+    function dipPolygon2(ctx, sides, r, dipMult) {
+        const dip = 1 - (7 / sides / sides) * dipMult;
+        
+        ctx.moveTo(r, 0);
+    
+        for (let i = 0; i < sides; i++) {
+            const theta = (i + 1) / sides * TAU;
+            const hTheta = (i + .5) / sides * TAU;
+    
+            ctx.quadraticCurveTo(
+                Math.cos(hTheta) * dip * r,
+                Math.sin(hTheta) * dip * r,
+                Math.cos(theta) * r,
+                Math.sin(theta) * r
+            );
+        }
+    }
+    
+    ctx.beginPath();
+    dipPolygon2(ctx, 13, 1, 5);
+    dipPolygon2(ctx, 13, .8, 5);
+    dipPolygon2(ctx, 13, .6, 5);
+    dipPolygon2(ctx, 13, .4, 5);
+    for (let i = 0; i < 13; i++) {
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(TAU / 13 * i) * 1.1, Math.sin(TAU / 13 * i) * 1.1);
+    }
+    ctx.stroke();
+    ctx.closePath();
+}
+
+export function drawThirdEye(ctx = _ctx, hit = false) {
+    ctx.fillStyle = mixColors(colors.lighterBlack, "#FF0000", hit * .5);
+    ctx.strokeStyle = ctx.fillStyle;
+    ctx.lineWidth = .1;
+    ctx.beginPath();
+    ctx.moveTo(0, -1);
+    ctx.quadraticCurveTo(-1, 0, 0, 1);
+    ctx.quadraticCurveTo(1, 0, 0, -1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = mixColors(colors.white, "#FF0000", hit * .5);
+    ctx.beginPath();
+    ctx.arc(0, 0, .5, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawPincer(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.lighterBlack, "#FF0000", hit * .5), .2);
+    ctx.beginPath();
+    ctx.moveTo(-1, -.2);
+    ctx.quadraticCurveTo(-.2, -.95, .9, .2);
+    ctx.lineTo(.9, .2);
+    ctx.quadraticCurveTo(.2, -.1, -1, .2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawEgg(ctx = _ctx, color, hit = false) {
+    // const size = .9 + (rarity * .025);
+
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .2);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, .775, 1, 0, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+export function drawAntennae(ctx = _ctx) {
+    ctx.save();
+    setStyle(ctx, colors.lighterBlack, .1);
+    ctx.scale(1.5, 1.5);
+    ctx.beginPath();
+    ctx.moveTo(.16, 0);
+    ctx.quadraticCurveTo(.18, -.51, .49, -.83);
+    ctx.quadraticCurveTo(.3, -.41, .16, 0);
+    ctx.moveTo(-.16, 0);
+    ctx.quadraticCurveTo(-.18, -.51, -.49, -.83);
+    ctx.quadraticCurveTo(-.3, -.41, -.16, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawPeas(ctx = _ctx, hit = false, color, index) {
+    let count = state.petalConfigs[index].splits;
+    
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .25);
+    for (let i = 0; i < count; i++) {
+        const angle = i * TAU / count + TAU / 8;
+        ctx.beginPath();
+        ctx.arc(Math.cos(angle) * .75, Math.sin(angle) * .75, .75, 0, TAU);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    }
+}
+
+function drawStick(color, ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .4);
+
+    ctx.beginPath();
+    ctx.moveTo(-1, 0);
+    ctx.lineTo(1, 0);
+    ctx.moveTo(-.6, -.6);
+    ctx.lineTo(-.75, .4);
+    ctx.moveTo(.6, -.4);
+    ctx.lineTo(.8, .8);
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function drawScorpionProjectile(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .6, 0);
+
+    ctx.beginPath();
+    ctx.moveTo(1, 0);
+    ctx.lineTo(-.65, -1);
+    ctx.lineTo(-.65, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawDahlia(ctx = _ctx, index, rarity) {
+    let count = state.petalConfigs[index].tiers[rarity].count;
+    setStyle(ctx, colors.rosePink, .2);
+
+    if (count > 1) {
+        for (let i = 0; i < count; i++) {
+            const angle = TAU / count * i + TAU / 12;
+    
+            ctx.beginPath();
+            ctx.arc(Math.cos(angle) * .66, Math.sin(angle) * .66, .5, 0, TAU);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+    } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, .5, 0, TAU);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    }
+}
+
+function drawPrimrose(ctx = _ctx, hit = false, real = false) {
+    if (real) {
+        ctx.shadowColor = "#FFFFFF";
+        ctx.shadowBlur = 10;
+
+        ctx.beginPath();
+        ctx.arc(0, 0, 1, 0, TAU);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    setStyle(ctx, mixColors(colors.honeyGold, "#FF0000", hit * .5), .15);
+
+    ctx.rotate(Math.PI / 6);
+    dipPolygon(ctx, 3, 1.2, .1, 0);
+    ctx.rotate(-Math.PI / 6);
+    ctx.fill();
+    ctx.stroke();
+
+    dipPolygon(ctx, 3, .8, .1, 0);
+    ctx.fill();
+    ctx.stroke();
+
+    setStyle(ctx, mixColors(colors.rosePink, "#FF0000", hit * .5), .075);
+    for (let i = 0; i < 3; i++) {
+        const angle = TAU / 3 * i + TAU / 6;
+
+        ctx.beginPath();
+        ctx.arc(Math.cos(angle) * .3, Math.sin(angle) * .3, .12, 0, TAU);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    }
+}
+
+function drawSpellbook(ctx = _ctx, hit = false, real = false, spell = 0) {
+    if (real) {
+        ctx.shadowColor = "#C85555";
+        ctx.shadowBlur = 10 + Math.sin(performance.now() / 300) * 5;
+
+        ctx.beginPath();
+        ctx.arc(0, 0, 1, 0, TAU);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    ctx.shadowBlur = 0;
+
+    setStyle(ctx, mixColors(colors.book, "#FF0000", hit * .5), .15);
+    ctx.beginPath();
+    ctx.rect(-1, -1, 2, 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = mixColors(mixColors(colors.bookSpine, "#000000", .2), "#FF0000", hit * .5);
+    ctx.lineWidth = .2;
+    ctx.beginPath();
+    ctx.moveTo(-1, -1);
+    ctx.lineTo(-1, 1);
+    ctx.stroke();
+
+    switch (spell) {
+        case 0: // Pentagram
+            setStyle(ctx, mixColors(colors.evilLadybugRed, "#FF0000", hit * .5), .1);
+            polygon(ctx, 5, .35, 0);
+            ctx.fill();
+            ctx.stroke();
+            break;
+        case 1: // Earth
+            setStyle(ctx, mixColors(colors.rockGray, "#FF0000", hit * .5), .1);
+            polygon(ctx, 6, .35, 0);
+            ctx.fill();
+            ctx.stroke();
+            break;
+    }
+}
+
+const spikeSize = TAU / 12;
+function drawDeity(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.lightningTeal, "#FF0000", hit * .5), .125);
+
+    ctx.beginPath();
+
+    for (let i = 0; i < 3; i++) {
+        const angle = i * TAU / 3;
+        const m = angle - spikeSize;
+        const M = angle + spikeSize;
+        const a3 = angle + Math.PI / 3;
+        const A3 = angle + Math.PI / 3 * 2;
+
+        ctx.lineTo(Math.cos(m) * .75, Math.sin(m) * .75);
+        ctx.lineTo(Math.cos(angle), Math.sin(angle));
+        ctx.bezierCurveTo(Math.cos(M) * .75, Math.sin(M) * .75, Math.cos(a3) * .5, Math.sin(a3) * .5, Math.cos(A3) * .5, Math.sin(A3) * .5);
+    }
+
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawLightning(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.lightningTeal, "#FF0000", hit * .5), .125);
+    spikeBall(ctx, 10, 1, 0);
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawPowderStatic(ctx = _ctx) {
+    ctx.fillStyle = colors.white;
+
+    for (let i = 0; i < 8; i++) {
+        const angle = TAU / 8 * i;
+
+        const d = i % 3 === 0 ? .5 : .25;
+
+        ctx.beginPath();
+        ctx.arc(Math.cos(angle) * d, Math.sin(angle) * d, .3, 0, TAU);
+        ctx.closePath();
+        ctx.fill();
+    }
+}
+
+function drawPowderDynamic(id, ctx = _ctx, hit = false) {
+    ctx.fillStyle = mixColors(colors.white, "#FF0000", hit * .5);
+
+    for (let i = 0; i < 8; i++) {
+        const angle = TAU / 8 * i + Math.cos(performance.now() * .005 - id) + id * 4 + i * .05;
+
+        const d = (i % 3 === 0 ? .6 : .4) * (Math.sin(performance.now() * .005 + id * 3 + i * .2) * .5 + .6);
+
+        ctx.beginPath();
+        ctx.arc(Math.cos(angle) * d, Math.sin(angle) * d, .5 * (Math.cos(performance.now() * .005 + id * 5 + i * .2) * .3 + 1), 0, TAU);
+        ctx.closePath();
+        ctx.fill();
+    }
+}
+
+function drawAntEgg(ctx = _ctx, index, rarity) {
+    let count = 4;
+    setStyle(ctx, colors.peach, .2);
+
+    if (count > 1) {
+        for (let i = 0; i < count; i++) {
+            const angle = i * TAU / count;
+            ctx.beginPath();
+            ctx.arc(Math.cos(angle) * .67, Math.sin(angle) * .67, .7, 0, TAU);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+    } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, .7, 0, TAU);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    }
+}
+
+function drawYucca(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.peaGreen, "#FF0000", hit * .5), .225);
+    ctx.beginPath();
+    ctx.moveTo(1.1, 0);
+    ctx.bezierCurveTo(.5, -.9, -.5, -.7, -1.1, 0);
+    ctx.bezierCurveTo(-.9, .9, .5, .7, 1.1, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(1, 0);
+    ctx.quadraticCurveTo(.4, -.4, -1, 0);
+    ctx.stroke();
+}
+
+const magnetPath = new Path2D("M-.03 0-.36-0Q-.4-.21-.2-.4-.01-.56.45-.43A.04.04-88.1 01.33-.11Q.18-.17.05-.15-.05-.13-.03 0Z");
+const magnet2Path = new Path2D("M-.03 0-.36 0Q-.4.21-.2.4-.01.56.45.43A.04.04 90 00.33.11Q.18.17.05.15-.05.13-.03 0Z");
+
+function drawMagnet(ctx = _ctx, hit = false) {
+    ctx.save();
+    ctx.scale(2, 2);
+    setStyle(ctx, mixColors("#4343A4", "#FF0000", hit * .5), .15);
+    ctx.fill(magnetPath);
+    ctx.stroke(magnetPath);
+    setStyle(ctx, mixColors("#A44343", "#FF0000", hit * .5), .15);
+    ctx.fill(magnet2Path);
+    ctx.stroke(magnet2Path);
+    ctx.restore();
+}
+
+export function drawAmulet(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.sandGold, "#FF0000", hit * .5), .15);
+
+    ctx.beginPath();
+
+    for (let i = 0; i < 3; i++) {
+        const angle = i * TAU / 3;
+        const m = angle - spikeSize;
+        const M = angle + spikeSize;
+        const a3 = angle + Math.PI / 3;
+        const A3 = angle + Math.PI / 3 * 2;
+
+        ctx.lineTo(Math.cos(m), Math.sin(m));
+        ctx.lineTo(Math.cos(angle), Math.sin(angle));
+        ctx.bezierCurveTo(Math.cos(M), Math.sin(M), Math.cos(a3) * .4, Math.sin(a3) * .4, Math.cos(A3) * .3, Math.sin(A3) * .3);
+    }
+
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(0, 0, .15, 0, TAU);
+    ctx.fillStyle = colors.cactusLightGreen;
+    ctx.fill();
+}
+
+export function drawArmor(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .2, 0);
+
+    ctx.beginPath();
+    polygon(ctx, 6, 1, Math.PI / 6);
+    ctx.arc(0, 0, 0.8, 0, TAU);
+    ctx.fill("evenodd");
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function drawJelly(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.jelly, "#FF0000", hit * .5), .15);
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.globalAlpha = .7;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.globalAlpha = .7;
+    ctx.beginPath();
+    ctx.arc(-.1, .35, .4, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(.5, -.4, .2, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(-.4, -.3, .3, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.globalAlpha = 1;
+}
+
+function drawYggdrasil(ctx = _ctx, hit = false) {
+    const innerColor = mixColors("#aa853f", "#FF0000", hit * .5);
+    const outerColor = mixColors("#876e36", "#FF0000", hit * .5);
+
+    // Outer color
+    ctx.lineCap = "round";
+    ctx.strokeStyle = outerColor;
+    ctx.fillStyle = outerColor;
+    ctx.beginPath(); // Stem
+    ctx.moveTo(1.13, .54);
+    ctx.quadraticCurveTo(1.20, .6, 1.16, .69);
+    ctx.quadraticCurveTo(1.13, .8, 1.03, .81);
+    ctx.quadraticCurveTo(-.52, .14, -.63, -1.13);
+    ctx.lineTo(-.56, -1.13);
+    ctx.quadraticCurveTo(-.1, .38, 1.13, .54);
+    ctx.lineWidth = .4;
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.beginPath(); // Curvy leaf
+    ctx.moveTo(.72, .54);
+    ctx.quadraticCurveTo(.3, .97, -.49, .13);
+    ctx.quadraticCurveTo(-.92, -.44, -.57, -.98);
+    ctx.quadraticCurveTo(-.2, -1.01, .24, -.8);
+    ctx.quadraticCurveTo(1.31, -.2, .72, .54);
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.beginPath(); // Spines
+    ctx.lineWidth = .4;
+    ctx.moveTo(.97, -.14);
+    ctx.quadraticCurveTo(.91, .24, .72, .54);
+    ctx.moveTo(.82, -.47);
+    ctx.quadraticCurveTo(.78, -.13, .61, .38);
+    ctx.moveTo(.66, -.7);
+    ctx.quadraticCurveTo(.64, -.38, .43, .26);
+    ctx.moveTo(.46, -.79);
+    ctx.quadraticCurveTo(.42, -.36, .22, .1);
+    ctx.moveTo(.26, -.92);
+    ctx.quadraticCurveTo(.21, -.59, .04, -.06);
+    ctx.moveTo(.02, -.97);
+    ctx.quadraticCurveTo(0, -.72, -.14, -.28);
+    ctx.moveTo(-.18, -1.04);
+    ctx.quadraticCurveTo(-.17, -.83, -.29, -.47);
+    ctx.moveTo(-.38, -1.07);
+    ctx.quadraticCurveTo(-.35, -.34, -.74, -.88);
+    ctx.moveTo(-.76, -.59);
+    ctx.quadraticCurveTo(-.61, -.49, -.4, -.46);
+    ctx.moveTo(-.78, -.34);
+    ctx.quadraticCurveTo(-.61, -.26, -.3, -.24);
+    ctx.moveTo(-.69, -.06);
+    ctx.quadraticCurveTo(-.47, -.04, -.15, -.09);
+    ctx.moveTo(-.65, .14);
+    ctx.quadraticCurveTo(-.47, .15, .05, .05);
+    ctx.moveTo(-.53, .33);
+    ctx.quadraticCurveTo(-.18, .32, .12, .2);
+    ctx.quadraticCurveTo(-.19, .31, .12, .2);
+    ctx.moveTo(-.35, .5);
+    ctx.quadraticCurveTo(.02, .47, .27, .35);
+    ctx.moveTo(-.08, .63);
+    ctx.quadraticCurveTo(.15, .6, .49, .47);
+    ctx.moveTo(.26, .72);
+    ctx.quadraticCurveTo(.5, .72, .72, .54);
+    ctx.stroke();
+
+    // Inner color
+    ctx.strokeStyle = innerColor;
+    ctx.fillStyle = innerColor;
+    ctx.beginPath(); // Stem
+    ctx.moveTo(1.13, .54);
+    ctx.quadraticCurveTo(1.20, .6, 1.16, .69);
+    ctx.quadraticCurveTo(1.13, .8, 1.03, .81);
+    ctx.quadraticCurveTo(-.52, .14, -.63, -1.13);
+    ctx.lineTo(-.56, -1.13);
+    ctx.quadraticCurveTo(-.1, .38, 1.13, .54);
+    ctx.lineWidth = .1;
+    ctx.stroke();
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.lineCap = "square";
+    ctx.beginPath(); // Curvy leaf
+    ctx.lineWidth = .1;
+    ctx.moveTo(.72, .54);
+    ctx.quadraticCurveTo(.3, .97, -.49, .13);
+    ctx.quadraticCurveTo(-.92, -.44, -.57, -.98);
+    ctx.quadraticCurveTo(-.2, -1.01, .24, -.8);
+    ctx.quadraticCurveTo(1.31, -.2, .72, .54);
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.beginPath(); // Spines
+    ctx.lineWidth = .125;
+    ctx.moveTo(.97, -.14);
+    ctx.quadraticCurveTo(.91, .24, .72, .54);
+    ctx.moveTo(.82, -.47);
+    ctx.quadraticCurveTo(.78, -.13, .61, .38);
+    ctx.moveTo(.66, -.7);
+    ctx.quadraticCurveTo(.64, -.38, .43, .26);
+    ctx.moveTo(.46, -.79);
+    ctx.quadraticCurveTo(.42, -.36, .22, .1);
+    ctx.moveTo(.26, -.92);
+    ctx.quadraticCurveTo(.21, -.59, .04, -.06);
+    ctx.moveTo(.02, -.97);
+    ctx.quadraticCurveTo(0, -.72, -.14, -.28);
+    ctx.moveTo(-.18, -1.04);
+    ctx.quadraticCurveTo(-.17, -.83, -.29, -.47);
+    ctx.moveTo(-.38, -1.07);
+    ctx.quadraticCurveTo(-.35, -.34, -.74, -.88);
+    ctx.moveTo(-.76, -.59);
+    ctx.quadraticCurveTo(-.61, -.49, -.4, -.46);
+    ctx.moveTo(-.78, -.34);
+    ctx.quadraticCurveTo(-.61, -.26, -.3, -.24);
+    ctx.moveTo(-.69, -.06);
+    ctx.quadraticCurveTo(-.47, -.04, -.15, -.09);
+    ctx.moveTo(-.65, .14);
+    ctx.quadraticCurveTo(-.47, .15, .05, .05);
+    ctx.moveTo(-.53, .33);
+    ctx.quadraticCurveTo(-.18, .32, .12, .2);
+    ctx.quadraticCurveTo(-.19, .31, .12, .2);
+    ctx.moveTo(-.35, .5);
+    ctx.quadraticCurveTo(.02, .47, .27, .35);
+    ctx.moveTo(-.08, .63);
+    ctx.quadraticCurveTo(.15, .6, .49, .47);
+    ctx.moveTo(.26, .72);
+    ctx.quadraticCurveTo(.5, .72, .72, .54);
+    ctx.stroke();
+    ctx.lineCap = "round";
+}
+
+function drawGlass(id, ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.white, "#FF0000", hit * .5), .2);
+    ctx.strokeStyle = mixColors(colors.white, "#FF0000", hit * .5);
+
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+        const angle = TAU / 5 * i;
+        const dist = 1 + Math.sin(id * 4 + i * 8) * .2;
+
+        ctx.lineTo(Math.cos(angle) * dist, Math.sin(angle) * dist);
+    }
+
+    ctx.closePath();
+
+    ctx.globalAlpha *= .5;
+    ctx.fill();
+    ctx.globalAlpha *= 1.4;
+    ctx.stroke();
+    ctx.globalAlpha /= .7;
+}
+
+function drawDandy(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .6);
+
+    ctx.beginPath();
+    ctx.moveTo(-1.2, 0);
+    ctx.lineTo(0, 0);
+    ctx.stroke();
+    ctx.closePath();
+
+    setStyle(ctx, mixColors(colors.white, "#FF0000", hit * .5), .225);
+    ctx.beginPath();
+    ctx.arc(.2, 0, .75, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawDandyIcon(ctx = _ctx, index, rarity) {
+    let count = state.petalConfigs[index].tiers[rarity].count;
+    for (let i = 0; i < count; i++) {
+        const angle = TAU / count * i;
+
+        ctx.save();
+        ctx.translate(Math.cos(angle) * .7, Math.sin(angle) * .7);
+        ctx.rotate(angle + TAU / 5);
+        ctx.scale(.9, .9);
+        drawDandy(ctx)
+        ctx.restore();
+    }
+}
+
+function drawSpongePetal(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.peach, "#FF0000", hit * .5), .2);
+
+    ctx.beginPath();
+
+    for (let i = 0; i < 7; i++) {
+        const angle = i * TAU / 7 + 180;
+        const max = angle + TAU / 14;
+
+        if (i === 0) {
+            const min = angle - TAU / 14;
+            ctx.moveTo(Math.cos(min) * .75, Math.sin(min) * .75);
+        }
+
+        ctx.quadraticCurveTo(Math.cos(angle) * 1.2, Math.sin(angle) * 1.2, Math.cos(max) * .75, Math.sin(max) * .75);
+    }
+
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawPearl(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.peach, "#FF0000", hit * .5), .2);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = mixColors(colors.white, "#FF0000", hit * .5);
+    ctx.beginPath();
+    ctx.arc(.25, -.25, .25, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = ctx.fillStyle;
+    ctx.beginPath();
+    ctx.moveTo(-.65, -.35);
+    ctx.quadraticCurveTo(-.7, .15, -.35, .55);
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function drawShellPetal(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.peach, "#FF0000", hit * .5), .2);
+    // Body
+    ctx.beginPath();
+    ctx.lineTo(-.52, -.34);
+    ctx.arcTo(-.87, 0, -.52, .34, .45454545454545453);
+    ctx.lineTo(-.52, .34);
+    ctx.lineTo(.21, .95);
+    ctx.arcTo(3.13, 0, .21, -.95, 1);
+    ctx.lineTo(-.52, -.34);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    // Lines
+    ctx.beginPath();
+    ctx.moveTo(-.31, .07);
+    ctx.lineTo(.48, .2);
+    ctx.stroke();
+    ctx.moveTo(-.37, .16);
+    ctx.lineTo(.3, .5);
+    ctx.stroke();
+    ctx.moveTo(-.31, -.07);
+    ctx.lineTo(.48, -.2);
+    ctx.stroke();
+    ctx.moveTo(-.37, -.16);
+    ctx.lineTo(.3, -.5);
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function drawBubblePetal(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.white, "#FF0000", hit * .5), .25);
+    ctx.strokeStyle = ctx.fillStyle
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.globalAlpha *= .4;
+    ctx.fill();
+    ctx.stroke();
+    ctx.globalAlpha *= 1.67;
+
+    ctx.fillStyle = mixColors(colors.white, "#FF0000", hit * .5);
+    ctx.beginPath();
+    ctx.arc(.25, -.35, .25, 0, TAU);
+    ctx.closePath();
+    ctx.globalAlpha *= .6;
+    ctx.fill();
+    ctx.globalAlpha /= .6;
+}
+
+function drawStarfishPetal(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.starfish, "#FF0000", hit * .5), .125);
+
+    ctx.beginPath();
+    ctx.moveTo(-1.2, -.5);
+    ctx.lineTo(1, -.4);
+    ctx.arc(1, 0, .4, -Math.PI / 2, Math.PI / 2);
+    ctx.lineTo(-1.2, .5);
+    ctx.lineTo(-1.3, .3);
+    ctx.lineTo(-1.3, -.3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = mixColors(ctx.fillStyle, colors.white, .3);
+
+    ctx.beginPath();
+    ctx.arc(-.75, 0, .4, 0, TAU);
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, .3, 0, TAU);
+    ctx.moveTo(.667, 0);
+    ctx.arc(.667, 0, .2, 0, TAU);
+    ctx.fill();
+    ctx.closePath();
+}
+
+function drawFangPetal(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.evilLadybugRed, "#FF0000", hit * .5), .2);
+    ctx.beginPath();
+    ctx.moveTo(1, 0);
+    ctx.lineTo(0, -.5);
+    ctx.lineTo(-1, 0);
+    ctx.lineTo(0, .5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawGoo(id, ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.cumWhite, "#FF0000", hit * .5), .2);
+
+    const s1 = Math.sin(performance.now() * .005 + id * .1) * .25 + .75;
+    const s2 = Math.sin(performance.now() * .0075 + id * .1 + 1) * .5 + .75;
+    const s3 = Math.sin(performance.now() * .001 + id * .1 + 2) * .3 + .75;
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, Math.PI / 2, -Math.PI / 2, true);
+    ctx.bezierCurveTo(-1.5 * s1, -1.3, -1.6 * s2, -1.1, -2.2 * s3, -1);
+    ctx.bezierCurveTo(-2.9 * s2, -.8, -2.7 * s3, -.5, -1.6 * s1, -.6);
+    ctx.bezierCurveTo(-2.6 * s3, -.4, -2.8 * s1, -.2, -1.6 * s2, 0);
+    ctx.bezierCurveTo(-3.7 * s1, .8, -1.7 * s3, 1.2, -1.1 * s2, .9);
+    ctx.bezierCurveTo(-1.1, 1.4, -.2, 1.4, 0, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawStaticGoo(ctx = _ctx) {
+    setStyle(ctx, colors.cumWhite, .2);
+
+    const s1 = Math.sin(.5 * .005) * .25 + .75;
+    const s2 = Math.sin(.5 * .0075 + 1) * .5 + .75;
+    const s3 = Math.sin(.5 * .001 + 2) * .3 + .75;
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, Math.PI / 2, -Math.PI / 2, true);
+    ctx.bezierCurveTo(-1.5 * s1, -1.3, -1.6 * s2, -1.1, -2.2 * s3, -1);
+    ctx.bezierCurveTo(-2.9 * s2, -.8, -2.7 * s3, -.5, -1.6 * s1, -.6);
+    ctx.bezierCurveTo(-2.6 * s3, -.4, -2.8 * s1, -.2, -1.6 * s2, 0);
+    ctx.bezierCurveTo(-3.7 * s1, .8, -1.7 * s3, 1.2, -1.1 * s2, .9);
+    ctx.bezierCurveTo(-1.1, 1.4, -.2, 1.4, 0, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawMaggotPoo(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.spider, "#FF0000", hit * .5), .2);
+    dipPolygon(ctx, 7, 1.05, 1.3, 0);
+    ctx.fill();
+    ctx.stroke();
+    setStyle(ctx, mixColors(mixColors(colors.spider, colors.cumWhite, .15), "#FF0000", hit * .5), .15);
+    dipPolygon(ctx, 5, .6, .5, 0);
+    ctx.fill();
+    ctx.stroke();
+    setStyle(ctx, mixColors(mixColors(colors.spider, colors.cumWhite, .3), "#FF0000", hit * .5), .1);
+    polygon(ctx, 8, .3, 0);
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawLightbulb(id, ctx = _ctx, hit = false, isReal = true) {
+    if (isReal) {
+        ctx.fillStyle = "#FFE51C";
+        ctx.globalAlpha *= .2;
+        ctx.beginPath();
+        ctx.arc(0, 0, 2.5 + Math.sin(performance.now() * .005 + id) * 1.75, 0, TAU);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    ctx.globalAlpha /= .2;
+
+    ctx.save();
+    ctx.scale(1.15, 1.15);
+
+    setStyle(ctx, mixColors("#ffe51c", "#FF0000", hit * .5), .2);
+
+    ctx.beginPath();
+    ctx.moveTo(-.32, .39);
+    ctx.bezierCurveTo(-.34, .27, -.4, .17, -.45, .1);
+    ctx.bezierCurveTo(-.5, 0, -.57, -.1, -.57, -.24);
+    ctx.bezierCurveTo(-.55, -.55, -.3, -.8, 0, -.81);
+    ctx.bezierCurveTo(.3, -.8, .55, -.55, .57, -.24);
+    ctx.bezierCurveTo(.55, -.1, .5, 0, .45, .1);
+    ctx.bezierCurveTo(.4, .17, .34, .27, .32, .39);
+    ctx.lineTo(-.32, .39);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    setStyle(ctx, mixColors("#666666", "#FF0000", hit * .5), .2);
+    ctx.beginPath();
+    ctx.rect(-.36, .39, .72, .5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.lineCap = "butt";
+    ctx.lineJoin = "miter";
+    ctx.strokeStyle = "#fff28d";
+    ctx.beginPath();
+    ctx.moveTo(-.2, .3);
+    ctx.lineTo(-.3, -.2);
+    ctx.lineTo(-.15, -.05);
+    ctx.lineTo(0, -.2);
+    ctx.lineTo(.15, -.05);
+    ctx.lineTo(.3, -.2);
+    ctx.lineTo(.2, .3);
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.restore();
+}
+
+function drawBattery(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors("#C8C8C8", "#FF0000", hit * .5), .2);
+    ctx.fillRect(-.25, -1, .5, .5);
+    ctx.strokeRect(-.25, -1, .5, .5);
+
+    setStyle(ctx, mixColors("#323233", "#FF0000", hit * .5), .2);
+    ctx.fillRect(-.6, -.7, 1.2, 1.7);
+    ctx.strokeRect(-.6, -.7, 1.2, 1.7);
+
+    setStyle(ctx, mixColors("#C98A5B", "#FF0000", hit * .5), .2);
+    ctx.fillRect(-.6, -.7, 1.2, .5);
+    ctx.strokeRect(-.6, -.7, 1.2, .5);
+}
+
+function drawDust(ctx = _ctx, index, rarity) {
+    let count = state.petalConfigs[index].tiers[rarity].count;
+    setStyle(ctx, colors.rockGray, .2);
+
+    for (let i = 0; i < count; i++) {
+        const angle = TAU / count * i;
+
+        ctx.save();
+        ctx.translate(Math.cos(angle) * .6, Math.sin(angle) * .6);
+        polygon(ctx, 5, .5, angle);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+function drawShrubPetal(color, ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .125);
+
+    for (let i = 9; i >= 8; i--) {
+        polygon(ctx, i, 1 - (0.33 * (9 - i)), 0);
+        ctx.fill();
+        ctx.stroke();
+    };
+
+    ctx.fillStyle = mixColors(mixColors(color, "#000000", .1), "#FF0000", hit * .5);
+    
+    ctx.beginPath();
+    ctx.arc(0, 0, .33, 0, TAU);
+    ctx.fill();
+    ctx.closePath();
+}
+
+function drawLantern(color, altColor, ctx = _ctx, hit = false) {
+    ctx.fillStyle = altColor;
+    ctx.globalAlpha *= .5;
+
+    ctx.translate(0, .125)
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 1.25 + Math.sin(performance.now() / 750) * .75, 0, TAU);
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.beginPath();
+    ctx.globalAlpha *= 1.5;
+    ctx.arc(0, 0, .75 + Math.sin(performance.now() / 750) * .25, 0, TAU);
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.globalAlpha /= .75;
+
+    ctx.lineWidth = .25;
+    ctx.strokeStyle = mixColors(mixColors(color, "#FFFFFF", .25), "#FF0000", hit * .5);
+
+    ctx.beginPath();
+    ctx.moveTo(1.05, -1);
+    ctx.lineTo(.8, 1);
+
+    ctx.moveTo(-1.05, -1);
+    ctx.lineTo(-.8, 1);
+
+    ctx.moveTo(.35, -1);
+    ctx.lineTo(.25, 1);
+
+    ctx.moveTo(-.35, -1);
+    ctx.lineTo(-.25, 1);
+
+    ctx.stroke();
+    ctx.closePath();
+
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .25);
+
+    ctx.beginPath();
+    ctx.moveTo(1.25, -1);
+    ctx.lineTo(1, -1.5);
+    ctx.lineTo(-1, -1.5);
+    ctx.lineTo(-1.25, -1);
+    ctx.lineTo(1.25, -1);
+
+    ctx.moveTo(1, 1);
+    ctx.lineTo(.75, 1.125);
+    ctx.lineTo(-.75, 1.125);
+    ctx.lineTo(-1, 1);
+    ctx.lineTo(1, 1);
+
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.strokeStyle = mixColors(mixColors(color, "#000000", .25), "#FF0000", hit * .5);
+
+    ctx.beginPath();
+    ctx.moveTo(.75, -1.5);
+    ctx.lineTo(.5, -2);
+    ctx.lineTo(-.5, -2);
+    ctx.lineTo(-.75, -1.5);
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function drawStaticLantern(color, altColor, ctx = _ctx) {
+    ctx.fillStyle = altColor;
+    ctx.globalAlpha = .5;
+
+    ctx.translate(0, .125)
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 1.25 + .5 * .75, 0, TAU);
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.beginPath();
+    ctx.globalAlpha = .75;
+    ctx.arc(0, 0, .75 + .5 * .25, 0, TAU);
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.globalAlpha = 1;
+
+    ctx.lineWidth = .25;
+    ctx.strokeStyle = mixColors(color, "#FFFFFF", .25);
+
+    ctx.beginPath();
+    ctx.moveTo(1.05, -1);
+    ctx.lineTo(.8, 1);
+
+    ctx.moveTo(-1.05, -1);
+    ctx.lineTo(-.8, 1);
+
+    ctx.moveTo(.35, -1);
+    ctx.lineTo(.25, 1);
+
+    ctx.moveTo(-.35, -1);
+    ctx.lineTo(-.25, 1);
+
+    ctx.stroke();
+    ctx.closePath();
+
+    setStyle(ctx, color, .25);
+
+    ctx.beginPath();
+    ctx.moveTo(1.25, -1);
+    ctx.lineTo(1, -1.5);
+    ctx.lineTo(-1, -1.5);
+    ctx.lineTo(-1.25, -1);
+    ctx.lineTo(1.25, -1);
+
+    ctx.moveTo(1, 1);
+    ctx.lineTo(.75, 1.125);
+    ctx.lineTo(-.75, 1.125);
+    ctx.lineTo(-1, 1);
+    ctx.lineTo(1, 1);
+
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.strokeStyle = mixColors(color, "#000000", .25);
+
+    ctx.beginPath();
+    ctx.moveTo(.75, -1.5);
+    ctx.lineTo(.5, -2);
+    ctx.lineTo(-.5, -2);
+    ctx.lineTo(-.75, -1.5);
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function drawEggs(ctx = _ctx, color, index, rarity) {
+    let count = state.petalConfigs[index].tiers[rarity].count;
+    setStyle(ctx, color, .225);
+
+    if (count > 1) {
+        for (let i = 0; i < count; i++) {
+            const angle = i * TAU / count;
+    
+            ctx.beginPath();
+            ctx.ellipse(Math.cos(angle) * .6, Math.sin(angle) * .6, .775, 1, 0, 0, TAU);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+    } else {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, .775, 1, 0, 0, TAU);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    }
+}
+
+const CandyColors = [
+    colors.rosePink,
+    colors.legendary,
+    colors.rare,
+    colors.common,
+    colors.ancient,
+    colors.orange
+]
+
+function drawCandy(id, ctx = _ctx, hit) {
+    setStyle(ctx, mixColors(CandyColors[id % CandyColors.length], "#FF0000", hit * .5), .25);
+
+    ctx.beginPath();
+    ctx.save();
+    switch (id % 3) {
+        case 0:
+            ctx.arc(0, 0, 1, 0, TAU);
+            break;
+        case 1:
+            polygon(ctx, 3, 1.3, 0);
+            break;
+        case 2:
+            ctx.rect(-1, -1, 2, 2);
+            break;
+    };
+    ctx.clip();
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.fillStyle = mixColors(ctx.fillStyle, colors.white, .25);
+
+    ctx.beginPath();
+    ctx.rotate(Math.PI / 4);
+    ctx.rect(-1, -.25, 2, .5);
+    ctx.fill();
+
+    ctx.restore();
+    ctx.closePath();
+
+    ctx.beginPath()
+    switch (id % 3) {
+        case 0:
+            ctx.arc(0, 0, 1, 0, TAU);
+            break;
+        case 1:
+            polygon(ctx, 3, 1.3, 0);
+            break;
+        case 2:
+            ctx.rect(-1, -1, 2, 2);
+            break;
+    };
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function drawCandyIcon(ctx = _ctx, index, rarity) {
+    let count = state.petalConfigs[index].tiers[rarity].count;
+
+    if (count > 1) {
+        for (let i = 0; i < count; i++) {
+            const angle = TAU / count * i;
+    
+            ctx.save();
+            ctx.translate(Math.cos(angle) * .75, Math.sin(angle) * .75);
+            ctx.scale(.5, .5);
+            ctx.rotate(angle)
+            drawCandy(i, ctx, false);
+            ctx.restore();
+        }
+    } else {
+        ctx.save();
+        ctx.scale(.55, .55);
+        drawCandy(2, ctx, false);
+        ctx.restore();
+    }
+}
+
+function drawClaw(ctx, hit) {
+    setStyle(ctx, mixColors(colors.crabLimbBrown, "#FF0000", hit * .5), .25);
+
+    ctx.beginPath();
+    ctx.moveTo(-.96, -.31);
+    ctx.bezierCurveTo(.5, -.91, .86, .23, 1, .54);
+    ctx.lineTo(.4, .09);
+    ctx.lineTo(.56, .75);
+    ctx.bezierCurveTo(.1, .33, -.38, .02, -1, .22);
+    ctx.bezierCurveTo(-.95, .05, -.86, -.12, -.96, -.31);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+}
+
+const petalCache = new Map();
+
+export function drawPetal(index, hit = false, ctx = _ctx, id = 0, size) {
+    if (options.cachePetalAssets) {
+        const key = `${index}`;
+        let cached = petalCache.get(key);
+        if (!cached) {
+            const img = document.createElement("canvas");
+            const _ctx = img.getContext("2d");
+
+            const baseSize = 256;
+            img.width = img.height = baseSize;
+            _ctx.translate(baseSize / 2, baseSize / 2);
+            _ctx.scale(baseSize / 6, baseSize / 6);
+
+            _ctx.save();
+            _ctx.lineCap = "round";
+            _ctx.lineJoin = "round";
+            
+            petalRender(index, hit, _ctx, id, size);
+            _ctx.restore();
+
+            cached = img;
+            petalCache.set(key, cached);
+        }
+        const drawSize = 6;
+        ctx.drawImage(cached, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+        return;
+    }
+    petalRender(index, hit, ctx, id, size);
+}
+
+function petalRender(index, hit, ctx, id, size) {
+    if (state.petalConfigs[index].drawing) {
+        const actions = state.petalConfigs[index].drawing.actions;
+        for (const action of actions) {
+            const [actionName, ...args] = action;
+            const actionFunc = Drawing.reverseActions[actionName];
+
+            if (!actionFunc) {
+                throw new Error(`Unknown action: ${actionName} ${action}`);
+            }
+
+            switch (actionFunc) {
+                case "circle":
+                    ctx.arc(args[0], args[1], args[2], 0, Math.PI * 2);
+                    break;
+                case "line":
+                    ctx.moveTo(args[0], args[1]);
+                    ctx.lineTo(args[2], args[3]);
+                    break;
+                case "fill":
+                    ctx.fillStyle = mixColors(args[0], "#FF0000", hit * .5);
+                    ctx.fill();
+                    break;
+                case "stroke":
+                    ctx.strokeStyle = mixColors(mixColors(args[0], "#FF0000", hit * .5), "#000000", args[2]);
+                    ctx.lineWidth = args[1];
+                    ctx.stroke();
+                    break;
+                case "paint":
+                    ctx.fillStyle = mixColors(args[0], "#FF0000", hit * .5);;
+                    ctx.strokeStyle = mixColors(mixColors(args[0], "#FF0000", hit * .5), "#000000", args[2]);
+                    ctx.lineWidth = args[1];
+                    ctx.fill();
+                    ctx.stroke();
+                    break;
+                case "polygon": {
+                    let arg2 = args[2];
+                
+                    if (isNaN(arg2)) {
+                        if (typeof arg2 === "string" && arg2.startsWith("date_")) {
+                            const mult = parseFloat(arg2.split("_")[1]);
+                            arg2 = date * (isNaN(mult) ? 1 : mult);
+                        } else if (arg2 === "date") {
+                            arg2 = date;
+                        } else {
+                            arg2 = 0;
+                        }
+                    } else {
+                        arg2 = Number(arg2);
+                    }
+                
+                    polygon(ctx, args[0], args[1], arg2);
+                    break;
+                }
+                case "spikeBall": {
+                    let arg2 = args[2];
+                
+                    if (isNaN(arg2)) {
+                        if (typeof arg2 === "string" && arg2.startsWith("date_")) {
+                            const mult = parseFloat(arg2.split("_")[1]);
+                            arg2 = date * (isNaN(mult) ? 1 : mult);
+                        } else if (arg2 === "date") {
+                            arg2 = date;
+                        } else {
+                            arg2 = 0;
+                        }
+                    } else {
+                        arg2 = Number(arg2);
+                    }
+                
+                    spikeBall(ctx, args[0], args[1], arg2);
+                    break;
+                }
+                case "dipPolygon": {
+                    let arg3 = args[3];
+                
+                    if (isNaN(arg3)) {
+                        if (typeof arg3 === "string" && arg3.startsWith("date_")) {
+                            const mult = parseFloat(arg3.split("_")[1]);
+                            arg3 = date * (isNaN(mult) ? 1 : mult);
+                        } else if (arg3 === "date") {
+                            arg3 = date;
+                        } else {
+                            arg3 = 0;
+                        }
+                    } else {
+                        arg3 = Number(arg3);
+                    }
+                
+                    dipPolygon(ctx, args[0], args[1], args[2], arg3);
+                    break;
+                }
+                case "opacity":
+                    ctx.globalAlpha *= args[0];
+                    break;
+                case "blur":
+                    ctx.shadowColor = args[0];
+                    ctx.shadowBlur = args[1];
+                    break;
+                case "noBlur":
+                    ctx.shadowBlur = 0;
+                    break;
+                case "ellipse": {
+                    let arg4 = args[4];
+                
+                    if (isNaN(arg4)) {
+                        if (typeof arg4 === "string" && arg4.startsWith("date_")) {
+                            const mult = parseFloat(arg4.split("_")[1]);
+                            arg4 = date * (isNaN(mult) ? 1 : mult);
+                        } else if (arg4 === "date") {
+                            arg4 = date;
+                        } else {
+                            arg4 = 0;
+                        }
+                    } else {
+                        arg4 = Number(arg4);
+                    }
+                
+                    ctx.ellipse(args[0], args[1], args[2], args[3], arg4, 0, Math.PI * 2);
+                    break;
+                }
+                default:
+                    ctx[actionFunc](...args);
+                    break;
+            }
+        }
+
+        return;
+    }
+    
+    switch (index) {
+        case 0: // Basic
+        case 1: // Light
+            basicPetal(ctx, hit, colors.white, size);
+            break;
+        case 2: // Faster
+            basicPetal(ctx, hit, colors.cumWhite, size);
+            break;
+        case 3: // Heavy
+            drawHeavy(ctx, hit);
+            break;
+        case 4: // Stinger
+            trianglePetal(ctx, hit, colors.stingerBlack);
+            break;
+        case 5: // Rice
+            drawRice(ctx, hit);
+            break;
+        case 6: // Rock
+            drawRockP(ctx, hit);
+            break;
+        case 7: // Cactus
+            drawCactusPetal(ctx, hit);
+            break;
+        case 8: // Leaf
+            drawLeaf(ctx, hit);
+            break;
+        case 9: // Wing
+            drawWing(ctx, hit);
+            break;
+        case 10: // Bone
+            drawBone(ctx, hit);
+            break;
+        case 11: // Dirt
+            drawDirt(ctx, hit);
+            break;
+        case 12: // Magnolia
+            drawMagnolia(ctx, hit);
+            break;
+        case 13: // Corn
+            drawCorn(ctx, hit);
+            break;
+        case 14: // Sand
+            drawSingleSand(ctx, hit);
+            break;
+        case 15: // Orange
+            drawOrange(ctx, hit);
+            break;
+        case 16: // Missile
+            drawMissile(ctx, hit);
+            break;
+        case 17: // projectile.pea
+            basicPetal(ctx, hit, colors.peaGreen, size);
+            break;
+        case 18: // Rose
+            basicPetal(ctx, hit, colors.rosePink, size);
+            break;
+        case 19: // Yin Yang
+            drawYinYang(ctx, hit);
+            break;
+        case 20: // Pollen
+            basicPetal(ctx, hit, colors.pollenGold, size);
+            break;
+        case 21: // Honey
+            drawHoney(ctx, hit);
+            break;
+        case 22: // Iris
+            basicPetal(ctx, hit, colors.irisPurple, size);
+            break;
+        case 23: // Web
+            drawWebPetal(ctx, hit);
+            break;
+        case 24: // web.mob.launched
+            drawWebMob(ctx, colors.white);
+            break;
+        case 25: // Third Eye
+            drawThirdEye(ctx, hit);
+            break;
+        case 26: // Pincer
+            drawPincer(ctx, hit);
+            break;
+        case 27: // Beetle Egg
+            drawEgg(ctx, colors.peach, hit);
+            break;
+        case 28: // Antennae
+            drawAntennae(ctx);
+            break;
+        case 29: // Peas
+            drawPeas(ctx, hit, colors.peaGreen, index);
+            break;
+        case 30: // Stick
+            drawStick(colors.spider, ctx, hit);
+            break;
+        case 31: // scorpion.projectile
+            drawScorpionProjectile(ctx, hit);
+            break;
+        case 32: // Dahlia
+            basicPetal(ctx, hit, colors.rosePink, size);
+            break;
+        case 33: // Primrose
+            drawPrimrose(ctx, hit, true);
+            break;
+        case 34: // Fire Spellbook
+            drawSpellbook(ctx, hit, true, 0);
+            break;
+        case 35: // Deity
+            drawDeity(ctx, hit);
+            break;
+        case 36: // Lightning
+            drawLightning(ctx, hit);
+            break;
+        case 37: // Powder
+            drawPowderDynamic(id, ctx, hit);
+            break;
+        case 38: // Ant Eggs
+            basicPetal(ctx, hit, colors.peach, size);
+            break;
+        case 39: // Yucca
+            drawYucca(ctx, hit);
+            break;
+        case 40: // Magnet
+            drawMagnet(ctx, hit);
+            break;
+        case 41: // Amulet
+            drawAmulet(ctx, hit);
+            break;
+        case 42: // Jelly
+            drawJelly(ctx, hit);
+            break;
+        case 43: // Yggdrasil
+            drawYggdrasil(ctx, hit);
+            break;
+        case 44: // Glass
+            drawGlass(id, ctx, hit);
+            break;
+        case 45: // Dandelion
+            drawDandy(ctx, hit);
+            break;
+        case 46: // Sponge
+            drawSpongePetal(ctx, hit);
+            break;
+        case 47: // Pearl
+            drawPearl(ctx, hit);
+            break;
+        case 48: // Shell
+            drawShellPetal(ctx, hit);
+            break;
+        case 49: // Bubble
+            drawBubblePetal(ctx, hit);
+            break;
+        case 50: // Air
+            break;
+        case 51: // Starfish
+            drawStarfishPetal(ctx, hit);
+            break;
+        case 52: // Fangs
+            drawFangPetal(ctx, hit);
+            break;
+        case 53: // Goo
+            drawGoo(id, ctx, hit);
+            break;
+        case 54: // Maggot Poo
+            drawMaggotPoo(ctx, hit);
+            break;
+        case 55: // Lightbulb
+            drawLightbulb(id, ctx, hit, true);
+            break;
+        case 56: // Battery
+            drawBattery(ctx, hit);
+            break;
+        case 57: // Dust
+            setStyle(ctx, mixColors(colors.rockGray, "#FF0000", hit * .5), .3);
+            polygon(ctx, 5, 1, performance.now() * .001 + id);
+            ctx.fill();
+            ctx.stroke();
+            break;
+        case 58: // Armor
+            drawArmor(ctx, hit)
+            break;
+        case 59: // wasp.projectile
+            drawWaspMissile(ctx, hit);
+            break;
+        case 60: // Shrub
+            drawShrubPetal(colors.shrubGreen, ctx, hit);
+            break;
+        case 61: // projectile.grape
+            basicPetal(ctx, hit, colors.irisPurple, size);
+            break;
+        case 62: // Grapes
+            drawPeas(ctx, hit, colors.irisPurple, index);
+            break;
+        case 63: // Lantern
+            drawLantern(colors.rockGray, colors.orange, ctx, hit);
+            break;
+        case 64: // web.player.launched
+            drawWebMob(ctx, colors.playerYellow);
+            break;
+        case 65: // Branch
+            drawStick(colors.rockGray, ctx, hit);
+            break;
+        case 66: // Leech Egg
+            drawEgg(ctx, colors.lighterBlack, hit);
+            break;
+        case 67: // Hornet Egg
+            drawEgg(ctx, colors.peach, hit);
+            break;
+        case 68: // Candy
+            drawCandy(id, ctx, hit);
+            break;
+        case 69: // Claw
+            drawClaw(ctx, hit);
+            break;
+        case 70: // Diep Bullet
+            setStyle(ctx, mixColors(colors.diepBlue, "#FF0000", hit * .5), .45);
+            ctx.beginPath();
+            ctx.arc(0, 0, 1, 0, TAU);
+            ctx.fill();
+            ctx.stroke();
+            break;
+        case 71: // Diep Square
+            drawSquareMob(ctx, hit);
+            break;
+        case 72: // Diep Triangle
+            drawTriangleMob(ctx, hit);
+            break;
+        case 73: // Diep Pentagon
+            drawPentagonMob(ctx, hit);
+            break;
+        default:
+            console.log("Unknown petal index: " + index);
+            basicPetal(ctx, hit, "#FF0000", size);
+    }
+}
+
+export function drawUIPetal(index, rarity, ctx = _ctx) {
+    switch (index) {
+        case 0: // Basic
+            drawBasicPetals(ctx, index, rarity, 1, colors.white);
+            break;
+        case 1: // Light
+            drawBasicPetals(ctx, index, rarity, .5, colors.white);
+            break;
+        case 2: // Faster
+            drawBasicPetals(ctx, index, rarity, .5, colors.cumWhite);
+            break;
+        case 4: // Stinger
+            drawStinger(ctx, index, rarity);
+            break;
+        case 10: // Bone
+            ctx.save();
+            ctx.scale(1.25, 1.25);
+            drawBone(ctx);
+            ctx.restore();
+            break;
+        case 14: // Sand
+            drawSands(ctx, index, rarity);
+            break;
+        case 15: // Orange
+            drawOranges(ctx, index, rarity);
+            break;
+        case 18: // Basic
+            drawBasicPetals(ctx, index, rarity, 0.8, colors.rosePink);
+            break;
+        case 20: // Pollen
+            drawBasicPetals(ctx, index, rarity, .5, colors.playerYellow);
+            break;
+        case 22: // Iris
+            drawBasicPetals(ctx, index, rarity, .6, colors.irisPurple);
+            break;
+        case 27: // Beetle Egg
+            drawEggs(ctx, colors.peach, index, rarity);
+            break;
+        case 28: // Antennae
+            ctx.save();
+            ctx.translate(0, .85)
+            ctx.scale(1.65, 1.65);
+            drawAntennae(ctx);
+            ctx.restore()
+            break;
+        case 29: // Peas
+            ctx.save();
+            ctx.scale(.9, .9);
+            drawPeas(ctx, 0, colors.peaGreen, index);
+            ctx.restore();
+            break;
+        case 32: // Dahlia
+            drawDahlia(ctx, index, rarity);
+            break;
+        case 33: // Primrose
+            drawPrimrose(ctx, false, false);
+            break;
+        case 34: // Fire Spellbook
+            drawSpellbook(ctx, false, false, 0);
+            break;
+        case 37: // Powder
+            drawPowderStatic(ctx);
+            break;
+        case 38: // Ant Egg
+            drawAntEgg(ctx, index, rarity);
+            break;
+        case 45: // Dandelion
+            drawDandyIcon(ctx, index, rarity);
+            break;
+        case 46: // Sponge
+            ctx.save();
+            ctx.scale(1.25, 1.25);
+            drawSpongePetal(ctx);
+            ctx.restore();
+            break;
+        case 47: // Pearl
+            ctx.save();
+            ctx.scale(1.25, 1.25);
+            drawPearl(ctx);
+            ctx.restore();
+            break;
+        case 53: // Goo
+            ctx.save();
+            ctx.translate(.5, 0);
+            ctx.scale(.9, .9);
+            drawStaticGoo(ctx);
+            ctx.restore();
+            break;
+        case 55: // Lightbulb
+            drawLightbulb(0, ctx, false, false);
+            break;
+        case 57: // Dust
+            ctx.save();
+            ctx.scale(1.1, 1.1);
+            drawDust(ctx, index, rarity);
+            ctx.restore()
+            break;
+        case 62: // Grapes
+            ctx.save();
+            ctx.scale(.9, .9);
+            drawPeas(ctx, 0, colors.irisPurple, index);
+            ctx.restore();
+            break;
+        case 63: // Lantern
+            ctx.save();
+            ctx.scale(.8, .8);
+            drawStaticLantern(colors.rockGray, colors.orange, ctx);
+            ctx.restore();
+            break;
+        case 66: // Leech Egg
+            drawEggs(ctx, colors.lighterBlack, index, rarity);
+            break;
+        case 67: // Hornet Egg
+            drawEggs(ctx, colors.peach, index, rarity);
+            break;
+        case 68: // Candy
+            ctx.save();
+            ctx.scale(1.05, 1.05);
+            drawCandyIcon(ctx, index, rarity);
+            ctx.restore();
+            break;
+        default:
+            if (state.petalConfigs[index].icon) {
+                let count = state.petalConfigs[index].icon.count;
+                let size = state.petalConfigs[index].icon.size;
+                if (count > 1) {
+                    for (let i = 0; i < count; i++) {
+                        const angle = TAU / count * i;
+                
+                        ctx.save();
+                        ctx.translate(Math.cos(angle) * .775, Math.sin(angle) * .775);
+                        ctx.scale(size * .85, size * .85);
+                        ctx.rotate(angle)
+                        drawPetal(index, false, ctx);
+                        ctx.restore();
+                    }
+                } else {
+                    ctx.save();
+                    ctx.scale(size, size);
+                    drawPetal(index, false, ctx);
+                    ctx.restore();
+                }
+            } else {
+                drawPetal(index, false, ctx);
+            }
+            break;
+    }
+}
+
+function getUIPetalName(index) {
+    switch (index) {
+        case 27:
+            return "Egg";
+        case 38:
+            return "Eggs";
+        case 66:
+            return "Egg";
+        case 67:
+            return "Eggs";
+        default:
+            return state.petalConfigs[index].icon?.name ?? state.petalConfigs[index].name;
+    }
+}
+
+const petalIconCache = [];
+
+function createPetalIcon(index, rarity) {
+    const canvas = new OffscreenCanvas(128, 128);
+    const ctx = canvas.getContext("2d");
+    const petalText = getUIPetalName(index)
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    ctx.save();
+
+    ctx.beginPath();
+    ctx.roundRect(4, 4, 120, 120, 10);
+
+    ctx.strokeStyle = mixColors(state.tiers[rarity].color, "#000000", .2);
+    ctx.fillStyle = state.tiers[rarity].color;
+    ctx.lineWidth = 12;
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.translate(64, 51.2);
+    ctx.scale(23.75, 23.75);
+    drawUIPetal(index, rarity, ctx);
+
+    ctx.restore();
+
+    let size = 26,
+        k = 0;
+
+    while (true) {
+        ctx.font = `bold ${size}px Ubuntu`;
+
+        if (ctx.measureText(petalText).width < 96 || k++ > 512) {
+            break;
+        }
+
+        size--;
+    }
+
+    text(petalText, 64, 98, size, "#FFFFFF", ctx);
+
+    return canvas;
+}
+
+export function getPetalIcon(index, rarity) {
+    if (!petalIconCache[index]) {
+        petalIconCache[index] = [];
+    }
+
+    if (!petalIconCache[index][rarity]) {
+        petalIconCache[index][rarity] = createPetalIcon(index, rarity);
+    }
+
+    return petalIconCache[index][rarity];
+}
+
+const ratioFontSizeCache = [];
+
+const ratioPath = new Path2D();
+ratioPath.roundRect(4, 4, 120, 120, 8);
+
+const ratioClip = new Path2D();
+ratioClip.rect(0, 0, 128, 128);
+
+const measuringCanvas = new OffscreenCanvas(128, 128);
+const measuringCtx = measuringCanvas.getContext("2d");
+
+function measureText(text, max) {
+    let size = 26,
+        k = 0;
+
+    while (true) {
+        measuringCtx.font = `bold ${size}px Ubuntu`;
+
+        if (measuringCtx.measureText(text).width < max || k++ > 512) {
+            break;
+        }
+
+        size--;
+    }
+
+    return size;
+}
+
+export function drawPetalIconWithRatio(index, rarity, x, y, size, ratio, ctx = _ctx) {
+
+    const petalText = getUIPetalName(index)
+
+    ctx.save();
+
+    ctx.translate(x, y);
+    ctx.scale(size / 128, size / 128);
+
+    ctx.clip(ratioClip, "evenodd");
+
+    ctx.fillStyle = mixColors(state.tiers[rarity].color, "#000000", .1);
+    ctx.fill(ratioPath);
+
+    ctx.fillStyle = state.tiers[rarity].color;
+    ctx.fillRect(4, 124, 120, -120 * ratio);
+
+    ctx.strokeStyle = mixColors(state.tiers[rarity].color, "#000000", .2);
+    ctx.lineWidth = 12;
+    ctx.stroke(ratioPath);
+
+    ctx.save();
+    ctx.translate(64, 51.2);
+    ctx.scale(23.75, 23.75);
+
+    drawUIPetal(index, rarity, ctx);
+    ctx.restore();
+
+    if (ratioFontSizeCache[index] === undefined) {
+        ratioFontSizeCache[index] = measureText(petalText, 96);
+    }
+
+    text(petalText, 64, 98, ratioFontSizeCache[index], "#FFFFFF", ctx);
+
+    ctx.restore();
+}
+function drawLadybug(id, color, hit = false, ctx = _ctx, index, rarity) {
+    const myColor = mixColors(color, "#FF0000", hit * .5);
+    const black = mixColors(colors.stingerBlack, "#FF0000", hit * .5);
+    // Ladybug head
+    ctx.beginPath();
+    ctx.arc(.2, 0, .7, 0, TAU);
+    setStyle(ctx, black, .175);
+    ctx.fill();
+    ctx.stroke();
+
+    // Ladybug Body
+    ctx.fillStyle = myColor;
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, -Math.PI * .2125, Math.PI * .2125, true);
+    ctx.arc(.9, 0, .625, Math.PI * .6, -Math.PI * .6, false);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.save();
+    ctx.clip();
+
+    // Spots
+    ctx.fillStyle = black;
+    let amount = 2 + Math.abs(Math.sin(id) * .667) * 10 | 0;
+    amount += Math.floor(rarity / 1.5);
+    
+    for (let i = 0; i < amount; i++) {
+        let angle = Math.sin(i * 100 + id) * TAU;
+        let radius = Math.sin(i * 1000 + id) * .1 + .2;
+        let d = Math.sin(i * 10000 + id) * .3 + .7;
+        radius += Math.min(10, rarity) / 100;
+
+        ctx.beginPath();
+        ctx.arc(Math.cos(angle) * d, Math.sin(angle) * d, radius, 0, TAU);
+        ctx.fill();
+    }
+
+    ctx.restore();
+
+    // Ladybug stroke
+    setStyle(ctx, myColor, .175);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, -Math.PI * .2125, Math.PI * .2125, true);
+    ctx.arc(.9, 0, .625, Math.PI * .6, -Math.PI * .6, false);
+    ctx.closePath();
+    ctx.stroke();
+}
+
+function drawRock(id, color, rarity, hit = false, ctx = _ctx) {
+    const sides = Math.max(5 + rarity, 4 + (8 + rarity) * ((Math.sin(id) * .5 + .25) * ((rarity + 1) * .25)));
+    const radius = 1;
+    const angle = TAU / sides;
+
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .175 / (rarity * .1 + 1));
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(0) * radius, Math.sin(0) * radius);
+
+    for (let i = 1; i < sides; i++) {
+        const radISeed = Math.sin(i * 1000 + id) * .1 * (i % 2 ? .5 : 0);
+        const radI = radius + radISeed;
+
+        let a = angle * i;
+
+        if (i % 3 === 0) {
+            a += Math.sin(id) * .1;
+        }
+
+        ctx.lineTo(Math.cos(a) * radI, Math.sin(a) * radI);
+    }
+
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawBee(id, hit = false, ctx = _ctx, date) {
+    const black = mixColors(colors.stingerBlack, "#FF0000", hit * .5);
+    const yellow = mixColors(colors.beeYellow, "#FF0000", hit * .5);
+
+    ctx.fillStyle = ctx.strokeStyle = black;
+    ctx.lineWidth = .125;
+
+    const stingerRotation = (date + id * 120) % (3000 + id * 2) > (2500 + id * 2) ? Math.sin(date / 60 + id * .1) * .025 : 0;
+
+    ctx.beginPath();
+    ctx.moveTo(-1.23, stingerRotation);
+    ctx.lineTo(-.65, -.41);
+    ctx.lineTo(-.65, .41);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    setStyle(ctx, yellow, .125);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 1, .667, 0, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.save();
+    ctx.clip();
+
+    ctx.beginPath();
+    ctx.rect(-1, -1, .334, 2);
+    ctx.rect(-.334, -1, .334, 2);
+    ctx.rect(.334, -1, .334, 2);
+    ctx.fillStyle = black;
+    ctx.fill();
+
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 1, .667, 0, 0, TAU);
+    ctx.closePath();
+    ctx.stroke();
+
+    const rotation = 1 + Math.sin(date / 334 + id * .2) * .1;
+
+    setStyle(ctx, black, .1, 0);
+    ctx.beginPath();
+    ctx.moveTo(.85, -.15);
+    ctx.quadraticCurveTo(1.25, -.2, 1.4, -.45 * rotation);
+    ctx.moveTo(.85, .15);
+    ctx.quadraticCurveTo(1.25, .2, 1.4, .45 * rotation);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(1.4, -.45 * rotation, .15, 0, TAU);
+    ctx.arc(1.4, .45 * rotation, .15, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawSpider(ctx = _ctxid, id, color, attack = false, hit = false, date) {
+    // Legs
+    ctx.strokeStyle = mixColors(colors.stingerBlack, "#FF0000", hit * .5);
+    ctx.lineWidth = .235;
+    ctx.beginPath();
+    for (let i = 0; i < 4; i++) {
+        const rot = i * .52 - .79 + Math.cos(2 + date * (.0025 + (attack * .0125)) + i + id / 3) * .2;
+
+        ctx.rotate(rot);
+        ctx.moveTo(0, -2.2);
+        ctx.quadraticCurveTo(.2, -1, 0, 0);
+        ctx.quadraticCurveTo(-.2, 1, 0, 2.2);
+        ctx.rotate(-rot);
+    }
+    ctx.stroke();
+    ctx.closePath();
+
+    // Body
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .235);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawBeetle(id, color, hit = false, ctx = _ctx, attack = false, date) {
+    const pincerRot = Math.sin(date * (.0075 + .0075 * attack) + id / 4) * .15 + Math.PI / 20;
+
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .1);
+    ctx.save();
+    ctx.translate(.9, -.4);
+    ctx.rotate(pincerRot);
+    ctx.beginPath();
+    ctx.lineTo(-.2805, -.1445);
+    ctx.quadraticCurveTo(.306, -.374, .6885, -.085);
+    ctx.quadraticCurveTo(.7905, -.0085, .697, .0765);
+    ctx.quadraticCurveTo(.3655, 0, -.2125, .204);
+    ctx.closePath();
+    ctx.fill();
+    ctx.rotate(-pincerRot);
+    ctx.translate(0, .8);
+    ctx.rotate(-pincerRot);
+    ctx.beginPath();
+    ctx.lineTo(-.2805, .1445);
+    ctx.quadraticCurveTo(.306, .374, .6885, .085);
+    ctx.quadraticCurveTo(.7905, .0085, .697, -.0765);
+    ctx.quadraticCurveTo(.3655, 0, -.2125, -.204);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .125);
+    ctx.beginPath();
+    ctx.moveTo(1, 0);
+    ctx.bezierCurveTo(1, 1, -1, 1, -1, 0);
+    ctx.bezierCurveTo(-1, -1, 1, -1, 1, 0);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.beginPath();
+    ctx.moveTo(-.667, -.025);
+    ctx.quadraticCurveTo(.1, .1, .667, -.025);
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.beginPath();
+    ctx.arc(-.45, -.3, .15, 0, TAU);
+    ctx.arc(0, -.3, .15, 0, TAU);
+    ctx.arc(.45, -.3, .15, 0, TAU);
+    ctx.moveTo(-.45, .3);
+    ctx.arc(-.45, .3, .15, 0, TAU);
+    ctx.arc(0, .3, .15, 0, TAU);
+    ctx.arc(.45, .3, .15, 0, TAU);
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.fill();
+}
+
+function drawLeafbug(id, color, attack = false, hit = false, ctx = _ctx, date) {
+    ctx.strokeStyle = mixColors(colors.lighterBlack, "#FF0000", hit * .5);
+    ctx.lineWidth = .2;
+    ctx.beginPath();
+    for (let i = 0; i < 4; i++) {
+        const rot = i * .52 - .79 + Math.cos(date * (.0025 + (attack * .0125)) + i + id / 3) * .2;
+
+        ctx.rotate(rot);
+        ctx.moveTo(-.1, -.8);
+        ctx.quadraticCurveTo(.1, -.8, -.1, 0);
+        ctx.quadraticCurveTo(.1, .8, -.1, .8);
+        ctx.rotate(-rot);
+    }
+    ctx.stroke();
+    ctx.closePath();
+
+    // Pincer
+    const pincerRot = Math.sin(date * (.005 + (attack * .01)) + id / 4) * .15 + Math.PI / 10;
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.save();
+    ctx.translate(.6, -.2);
+    ctx.rotate(pincerRot);
+    scorpionPincer(ctx);
+    ctx.rotate(-pincerRot);
+    ctx.scale(1, -1);
+    ctx.translate(0, -.4);
+    ctx.rotate(pincerRot);
+    scorpionPincer(ctx);
+    ctx.rotate(-pincerRot);
+    ctx.restore();
+
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .125);
+    ctx.beginPath();
+    ctx.moveTo(.6609, .4525);
+    ctx.quadraticCurveTo(.2989, .6336, -.1536, .5431);
+    ctx.quadraticCurveTo(-.5157, .4525, -.7872, .2715);
+    ctx.quadraticCurveTo(-1.104, .0453, -.8777, -.181);
+    ctx.quadraticCurveTo(-.6062, -.4525, -.1536, -.5431);
+    ctx.quadraticCurveTo(.2989, -.6336, .7062, -.4073);
+    ctx.quadraticCurveTo(1.2493, .0453, .6609, .4525);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(.65, .05);
+    ctx.lineTo(.55, 0);
+    ctx.lineTo(.25, .25);
+    ctx.lineTo(.5, 0);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(-.3, .25);
+    ctx.lineTo(-.1, 0);
+    ctx.lineTo(-.55, 0);
+    ctx.lineTo(-.1, 0);
+    ctx.lineTo(-.3, -.25);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(.5, 0);
+    ctx.lineTo(.25, -.25);
+    ctx.lineTo(.55, 0);
+    ctx.lineTo(.65, -.05);
+    ctx.closePath();
+    ctx.stroke();
+}
+
+function drawRoach(hit = false, friend, ctx = _ctx) {
+    setStyle(ctx, mixColors(friend ? colors.playerYellow : colors.roachHead, "#FF0000", hit * .5), .125);
+    ctx.beginPath();
+    ctx.arc(.6, 0, .4, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    setStyle(ctx, mixColors(friend ? colors.playerYellow : colors.roach, "#FF0000", hit * .5), .125);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 1, .65, 0, .675, -.675);
+    ctx.quadraticCurveTo(.3, 0, .785, .35);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.ellipse(.3, -.25, .15, .2, Math.PI / 10, 0, TAU);
+    ctx.ellipse(.3, .25, .15, .2, -Math.PI / 10, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(-.6, .15);
+    ctx.quadraticCurveTo(-.3, .35, 0, .3);
+    ctx.moveTo(-.6, -.15);
+    ctx.quadraticCurveTo(-.3, -.35, 0, -.3);
+    ctx.stroke();
+    ctx.closePath();
+
+    setStyle(ctx, mixColors(colors.lighterBlack, "#FF0000", hit * .5), .125, 0);
+    ctx.beginPath();
+    ctx.moveTo(.85, .16);
+    ctx.quadraticCurveTo(1.36, .18, 1.68, .49);
+    ctx.quadraticCurveTo(1.26, .3, .85, .16);
+    ctx.moveTo(.85, -.16);
+    ctx.quadraticCurveTo(1.36, -.18, 1.68, -.49);
+    ctx.quadraticCurveTo(1.26, -.3, .85, -.16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawHornet(id, color, altColor, hit = false, ctx = _ctx, date) {
+    const myColor = mixColors(color, "#FF0000", hit * .5);
+    const myAltColor = mixColors(altColor, "#FF0000", hit * .5);
+    setStyle(ctx, myAltColor, .15, 0);
+
+    const stingerRotation = (date + id * 240) % (9000 + id * 8) > (8500 + id * 4) ? Math.sin(date / 60 + id * .1) * .025 : 0;
+
+    ctx.beginPath();
+    ctx.moveTo(-1.55, stingerRotation);
+    ctx.lineTo(-.25, -.4);
+    ctx.lineTo(-.25, .4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    setStyle(ctx, myColor, .1);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 1, .667, 0, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.save();
+    ctx.clip();
+
+    ctx.beginPath();
+    ctx.rect(-1, -1, .334, 2);
+    ctx.rect(-.334, -1, .334, 2);
+    ctx.rect(.334, -1, .334, 2);
+    ctx.fillStyle = myAltColor;
+    ctx.fill();
+
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 1, .667, 0, 0, TAU);
+    ctx.closePath();
+    ctx.stroke();
+
+    setStyle(ctx, myAltColor, .1, 0);
+
+    ctx.beginPath();
+    ctx.moveTo(.85, .16);
+    ctx.quadraticCurveTo(1.36, .18, 1.68, .49);
+    ctx.quadraticCurveTo(1.26, .3, .85, .16);
+    ctx.moveTo(.85, -.16);
+    ctx.quadraticCurveTo(1.36, -.18, 1.68, -.49);
+    ctx.quadraticCurveTo(1.26, -.3, .85, -.16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawMantis(id, color, attack = false, hit = false, ctx = _ctx, date) {
+    const black = mixColors(colors.stingerBlack, "#FF0000", hit * .5);
+    setStyle(ctx, black, .125, 0);
+
+    // Legs
+    ctx.beginPath();
+    const legSpeed = attack ? .0075 : .0025;
+    for (let i = 0; i < 3; i++) {
+        const k = [0, .1, .3][i];
+        ctx.moveTo(.35 - .25 * i, -.2);
+        ctx.lineTo(.5 - .4 * i - k - Math.sin(date * legSpeed + id / 6 + i) * .1, .75 + .2 * Math.sin(i + .5));
+        ctx.moveTo(.35 - .25 * i, .2);
+        ctx.lineTo(.5 - .4 * i - k + Math.sin(date * legSpeed + id / 3 + i / 3) * .1, -.75 - .2 * Math.sin(i + .5));
+    }
+    ctx.stroke();
+    ctx.closePath();
+
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .125);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 1, .65, 0, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-.55, 0);
+    ctx.lineTo(.15, 0);
+    ctx.moveTo(.3, -.35);
+    ctx.quadraticCurveTo(.15, 0, .3, .35);
+    ctx.moveTo(-.45, .225);
+    ctx.quadraticCurveTo(-.3, .35, 0, .4);
+    ctx.moveTo(-.45, -.225);
+    ctx.quadraticCurveTo(-.3, -.35, 0, -.4);
+    ctx.stroke();
+
+    setStyle(ctx, black, .125, 0);
+    ctx.beginPath();
+    ctx.moveTo(.85, .16);
+    ctx.quadraticCurveTo(1.36, .18, 1.68, .49);
+    ctx.quadraticCurveTo(1.26, .3, .85, .16);
+    ctx.moveTo(.85, -.16);
+    ctx.quadraticCurveTo(1.36, -.18, 1.68, -.49);
+    ctx.quadraticCurveTo(1.26, -.3, .85, -.16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+const pupaPath = new Path2D("M.96-.33C.72-.6-.91-.83-.84-.33Q-1.04 0-.84.33C-.91.83.72.6.96.33L.8.27A.03.03 90 11.8-.27Z");
+function drawPupa(hit = false, color, ctx = _ctx) {
+    ctx.save();
+    ctx.scale(1.334, 1.334);
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .1);
+    ctx.beginPath();
+    ctx.arc(.6, 0, .325, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.arc(.7, -.08, .07, 0, TAU);
+    ctx.arc(.7, .08, .07, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+
+    setStyle(ctx, mixColors(colors.spider, "#FF0000", hit * .5), .1);
+    ctx.fill(pupaPath);
+    ctx.stroke(pupaPath);
+
+    ctx.beginPath();
+    ctx.moveTo(.65, -.35);
+    ctx.bezierCurveTo(.65, -.35, -.05, -.45, -.6, -.1);
+    ctx.moveTo(.65, .35);
+    ctx.bezierCurveTo(.65, .35, -.05, .45, -.6, .1);
+    ctx.moveTo(-.475, -.4);
+    ctx.bezierCurveTo(-.475, -.4, -.8, -.2, -.7, -.1);
+    ctx.moveTo(-.475, .4);
+    ctx.bezierCurveTo(-.475, .4, -.8, .2, -.7, .1);
+    ctx.moveTo(.475, -.25);
+    ctx.bezierCurveTo(.475, -.25, .375, 0, .4, .25);
+    ctx.moveTo(.275, -.2);
+    ctx.bezierCurveTo(.2, -.2, .175, 0, .275, .2);
+    ctx.moveTo(.1, 0);
+    ctx.bezierCurveTo(-.2, -.1, -.4, .1, -.6, 0);
+    ctx.stroke();
+    ctx.closePath();
+    ctx.restore();
+}
+
+function drawSandstorm(id, color, attack = false, hit = false, ctx = _ctx, date) {
+    const baseRot = date * (attack ? .0075 : .0025) + id / 3;
+
+    const myCol = mixColors(color, "#FF0000", hit * .5);
+
+    polygon(ctx, 6, 1, baseRot);
+    ctx.fillStyle = ctx.strokeStyle = myCol;
+    ctx.lineWidth = .25;
+    ctx.fill();
+    ctx.stroke();
+
+    polygon(ctx, 6, .667, -baseRot * .8 + Math.PI / 2);
+    ctx.fillStyle = ctx.strokeStyle = mixColors(myCol, "#000000", .15);
+    ctx.lineWidth = .25;
+    ctx.fill();
+    ctx.stroke();
+
+    polygon(ctx, 6, .334, baseRot * .6);
+    ctx.fillStyle = ctx.strokeStyle = mixColors(myCol, "#000000", .3);
+    ctx.lineWidth = .25;
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawScorpion(id, color, hit = false, ctx = _ctx, date) {
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .125);
+
+    // Legs
+    ctx.beginPath();
+    for (let i = 0; i < 3; i++) {
+        ctx.moveTo(.35 - .5 * i, -.2);
+        ctx.lineTo(.5 - .5 * i - Math.sin(date / 400 + id / 6 + i) * .1, .75 + .2 * Math.sin(i));
+        ctx.moveTo(.35 - .5 * i, .2);
+        ctx.lineTo(.5 - .5 * i + Math.sin(date / 400 + id / 3 + i) * .1, -.75 - .2 * Math.sin(i));
+    }
+    ctx.stroke();
+    ctx.closePath();
+
+    // Pincer
+    const pincerRot = Math.sin(date * .005 + id / 4) * .15 + Math.PI / 10;
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.save();
+    ctx.translate(.6, -.2);
+    ctx.rotate(pincerRot);
+    scorpionPincer(ctx);
+    ctx.rotate(-pincerRot);
+    ctx.scale(1, -1);
+    ctx.translate(0, -.4);
+    ctx.rotate(pincerRot);
+    scorpionPincer(ctx);
+    ctx.rotate(-pincerRot);
+    ctx.restore();
+
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .125);
+
+    // Body
+    ctx.beginPath();
+    ctx.moveTo(-1, 0);
+    ctx.bezierCurveTo(-1, -1.2, 1, -.7, 1, 0);
+    ctx.bezierCurveTo(1, .7, -1, 1.2, -1, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Main body designs
+    ctx.beginPath();
+    ctx.moveTo(.65, -.3);
+    ctx.quadraticCurveTo(.85, 0, .65, .3);
+    ctx.moveTo(.3, -.4);
+    ctx.quadraticCurveTo(.5, 0, .3, .4);
+    ctx.moveTo(0, -.4);
+    ctx.quadraticCurveTo(-.15, 0, 0, .4);
+    ctx.moveTo(-.45, -.5);
+    ctx.quadraticCurveTo(-.7, 0, -.45, .5);
+    ctx.stroke();
+    ctx.closePath();
+
+    // Tail/Head
+    ctx.beginPath();
+    ctx.moveTo(-1.2, 0);
+    ctx.bezierCurveTo(-1.2, -.6, -.25, -.3, -.25, 0);
+    ctx.bezierCurveTo(-.25, .3, -1.2, .6, -1.2, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Tail/Head designs
+    ctx.lineWidth = .1;
+    ctx.beginPath();
+    ctx.moveTo(-1, -.125);
+    ctx.quadraticCurveTo(-1.1, 0, -1, .125);
+    ctx.moveTo(-.65, -.175);
+    ctx.quadraticCurveTo(-.85, 0, -.65, .175);
+    ctx.stroke();
+    ctx.closePath();
+
+    // Stinger
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .1, 0);
+    ctx.beginPath();
+    ctx.moveTo(-.1, 0);
+    ctx.lineTo(-.35, -.15);
+    ctx.lineTo(-.35, .15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawDemon(id, friendly, hit = false, ctx = _ctx, attack = false, date) {
+    // Legs
+    ctx.strokeStyle = mixColors(colors.stingerBlack, "#FF0000", hit * .5);
+    ctx.lineWidth = .2;
+    ctx.beginPath();
+    for (let i = 0; i < 4; i++) {
+        const rot = i * .52 - .79 + Math.cos(date * (.001 + (attack * .005)) + i + id / 3) * .2;
+
+        ctx.rotate(rot);
+        ctx.moveTo(-.1, -.9);
+        ctx.quadraticCurveTo(.1, -.9, -.1, 0);
+        ctx.quadraticCurveTo(.1, .9, -.1, .9);
+        ctx.rotate(-rot);
+    }
+    ctx.stroke();
+    ctx.closePath();
+
+    // Eye
+    setStyle(ctx, mixColors(friendly ? colors.playerYellow : colors.honeyGold, "#FF0000", hit * .5), .05);
+    ctx.beginPath();
+    ctx.arc(.7, 0, .35, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Eye angry line thing idfk
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .1);
+    ctx.beginPath();
+    ctx.moveTo(.9, .15);
+    ctx.quadraticCurveTo(attack ? .8 : 1, 0, .9, -.15);
+    ctx.stroke();
+
+    // Body
+    setStyle(ctx, mixColors(friendly ? colors.playerYellow : colors.hellMobColor, "#FF0000", hit * .5), .125);
+    ctx.beginPath();
+    ctx.moveTo(.8, .3);
+    ctx.bezierCurveTo(.7, 1, -1, 1, -1, 0);
+    ctx.bezierCurveTo(-1, -1, .7, -1, .8, -.3);
+    ctx.quadraticCurveTo(.7, 0, .8, .3);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.beginPath();
+    ctx.moveTo(-.667, -.025);
+    ctx.quadraticCurveTo(.1, Math.sin(id * 3 + date / 534) * .1, .334, -.025);
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.beginPath();
+    ctx.arc(-.45, -.3, .15, 0, TAU);
+    ctx.arc(0, -.3, .15, 0, TAU);
+    ctx.arc(.45, -.3, .15, 0, TAU);
+    ctx.moveTo(-.45, .3);
+    ctx.arc(-.45, .3, .15, 0, TAU);
+    ctx.arc(0, .3, .15, 0, TAU);
+    ctx.arc(.45, .3, .15, 0, TAU);
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.fill();
+}
+
+function drawJellyfish(id, color, attack = false, hit = false, ctx = _ctx, date) {
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .125);
+    ctx.fillStyle = mixColors(color, "#FF0000", hit * .5);
+    ctx.strokeStyle = mixColors(color, "#FF0000", hit * .5);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+
+    ctx.globalAlpha *= .4;
+    ctx.fill();
+
+    ctx.globalAlpha *= 1.5;
+    ctx.stroke();
+
+    const insider = (10 + date * .00125 + id / 4) * (attack * 2 + 1);
+
+    for (let i = 0; i < 8; i++) {
+        ctx.rotate(TAU / 8 * i);
+
+        const angle = Math.sin(insider * (1 + i / 8)) * .3 * (1 - (i % 2) * .2);
+
+        ctx.beginPath();
+        ctx.moveTo(.8, 0);
+        ctx.lineTo(1.6, angle);
+        ctx.closePath();
+        ctx.stroke();
+
+        ctx.rotate(-TAU / 8 * i);
+    }
+}
+
+const cactusSides = [7, 9, 12, 16, 24, 28, 32, 32, 32, 38, 38, 40];
+function drawCactusMob(rarity, color, hit = false, ctx = _ctx) {
+    const sides = cactusSides[rarity] ?? 46;
+
+    const spikeCenter = .965;
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .08, 0);
+    ctx.beginPath();
+
+    for (let i = 0; i < sides; i++) {
+        const angle = TAU / sides * i;
+
+        ctx.save();
+        ctx.translate(Math.cos(angle) * spikeCenter, Math.sin(angle) * spikeCenter);
+        ctx.rotate(angle);
+
+        ctx.moveTo(.2, 0);
+        ctx.lineTo(0, -.1);
+        ctx.lineTo(0, .1);
+        ctx.lineTo(.2, 0);
+
+        ctx.restore();
+    }
+
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .125);
+    dipPolygon(ctx, sides, 1, 6.5 * (sides / 24), 0);
+    ctx.fill();
+    ctx.stroke();
+}
+
+function antHead(x, y, s, id, rotSpd, hit = false, ctx = _ctx, date) {
+    ctx.save();
+
+    ctx.strokeStyle = mixColors(colors.stingerBlack, "#FF0000", hit * .5);
+    ctx.lineWidth = .5;
+
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+
+    const rotation = Math.sin(date * rotSpd + id / 4) * .075;
+
+    ctx.beginPath();
+    ctx.moveTo(0, -.7);
+    ctx.rotate(-rotation);
+    ctx.quadraticCurveTo(1.25, -.5, 1.5, -.4);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.rotate(rotation);
+
+    ctx.beginPath();
+    ctx.moveTo(0, .7);
+    ctx.rotate(rotation);
+    ctx.quadraticCurveTo(1.25, .5, 1.5, .4);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.arc(x, y, s, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function termiteHead(x, y, s, id, rotSpd, hit = false, ctx = _ctx, date) {
+    ctx.save();
+
+    ctx.strokeStyle = mixColors(colors.stingerBlack, "#FF0000", hit * .5);
+    ctx.lineWidth = .45;
+
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+
+    const rotation = Math.sin(date * rotSpd + id / 4) * .075;
+
+    ctx.beginPath();
+    ctx.moveTo(0, -.7);
+    ctx.rotate(-rotation);
+    ctx.lineTo(1.25, -.5);
+    ctx.lineTo(1.5, -.25);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.rotate(rotation);
+
+    ctx.beginPath();
+    ctx.moveTo(0, .7);
+    ctx.rotate(rotation);
+    ctx.lineTo(1.25, .5);
+    ctx.lineTo(1.5, .25);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.arc(x, y, s, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawWings(x, y, s, id, rotSpd, hit = false, ctx = _ctx, date) {
+    const rotation = Math.sin(date * rotSpd + id / 5) * .3 + Math.PI / 10;
+
+    ctx.save();
+    ctx.globalAlpha *= .3;
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.fillStyle = mixColors("#FFFFFF", "#FF0000", hit * .5);
+
+    ctx.beginPath();
+    ctx.rotate(rotation);
+    ctx.ellipse(0, -.3, 1.35, .5, 0, 0, TAU);
+    ctx.rotate(-rotation * 2);
+    ctx.ellipse(0, .3, 1.35, .5, 0, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawBabyAntT(id, fillColor, attk = false, hit = false, ctx = _ctx, date) {
+    setStyle(ctx, mixColors(fillColor, "#FF0000", hit * .5), .4);
+    antHead(0, 0, 1, id, .005 + (attk * .0025), hit, ctx, date);
+}
+
+function drawWorkerAntT(id, fillColor, attk = false, hit = false, ctx = _ctx, date) {
+    setStyle(ctx, mixColors(fillColor, "#FF0000", hit * .5), .4);
+
+    ctx.beginPath();
+    ctx.arc(-1.1, 0, .667, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    antHead(0, 0, 1, id, .005 + (attk * .003), hit, ctx, date);
+}
+
+function drawSoldierAntT(id, fillColor, attk = false, hit = false, ctx = _ctx, date) {
+    setStyle(ctx, mixColors(fillColor, "#FF0000", hit * .5), .4);
+
+    ctx.beginPath();
+    ctx.arc(-1.1, 0, .667, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    drawWings(-.667, 0, 1.25, id, .002 + (attk * .0025), hit, ctx, date);
+    antHead(0, 0, 1, id, .005 + (attk * .0035), hit, ctx, date);
+}
+
+function drawQueenAntT(id, fillColor, attk = false, hit = false, ctx = _ctx, date) {
+    setStyle(ctx, mixColors(fillColor, "#FF0000", hit * .5), .4);
+
+    ctx.beginPath();
+    ctx.arc(-2, 0, 1.3, 0, TAU);
+    ctx.arc(-1.1, 0, 1.15, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    drawWings(-.667, 0, 1.25, id, .002 + (attk * .003), hit, ctx, date);
+    antHead(0, 0, 1, id, .005 + (attk * .004), hit, ctx, date);
+}
+
+function drawAntHoleT(fillColor, hit = false, ctx = _ctx) {
+    ctx.fillStyle = mixColors(fillColor, "#FF0000", hit * .5);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = mixColors(ctx.fillStyle, "#000000", .2);
+    ctx.beginPath();
+    ctx.arc(0, 0, .75, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = mixColors(ctx.fillStyle, "#000000", .25);
+    ctx.beginPath();
+    ctx.arc(0, 0, .5, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawBabyAnt(id, color, attack, hit, ctx = _ctx, date) {
+    drawBabyAntT(id, color, attack, hit, ctx, date);
+}
+
+function drawWorkerAnt(id, color, attack, hit, ctx = _ctx, date) {
+    drawWorkerAntT(id, color, attack, hit, ctx, date);
+}
+
+function drawSoldierAnt(id, color, attack, hit, ctx = _ctx, date) {
+    drawSoldierAntT(id, color, attack, hit, ctx, date);
+}
+
+function drawQueenAnt(id, color, attack, hit, ctx = _ctx, date) {
+    drawQueenAntT(id, color, attack, hit, ctx, date);
+}
+
+function drawAntHole(hit, color, ctx = _ctx) {
+    drawAntHoleT(color, hit, ctx);
+}
+
+function drawBabyFireAnt(id, color, attack, hit, ctx = _ctx, date) {
+    drawBabyAntT(id, color, attack, hit, ctx, date);
+}
+
+function drawWorkerFireAnt(id, color, attack, hit, ctx = _ctx, date) {
+    drawWorkerAntT(id, color, attack, hit, ctx, date);
+}
+
+function drawSoldierFireAnt(id, color, attack, hit, ctx = _ctx, date) {
+    drawSoldierAntT(id, color, attack, hit, ctx, date);
+}
+
+function drawQueenFireAnt(id, color, attack, hit, ctx = _ctx, date) {
+    drawQueenAntT(id, color, attack, hit, ctx, date);
+}
+
+function drawFireAntHole(hit, color, ctx = _ctx) {
+    drawAntHoleT(color, hit, ctx);
+}
+
+function drawTermiteMound(hit, friend, ctx = _ctx) {
+    setStyle(ctx, mixColors(friend ? colors.playerYellow : colors.scorpionBrown, "#FF0000", hit * .5), .4);
+    ctx.beginPath();
+
+    for (let i = 0; i < 7; i++) {
+        const ang = TAU / 7 * i;
+        const cs = Math.cos(ang) * .6;
+        const sn = Math.sin(ang) * .6;
+
+        ctx.moveTo(cs, sn);
+        ctx.arc(cs, sn, .5, 0, TAU);
+    }
+
+    ctx.fill();
+    ctx.stroke();
+
+    drawAntHoleT(friend ? colors.playerYellow : colors.termite, hit, ctx);
+}
+
+function drawBabyTermite(id, color, attk = false, hit = false, ctx = _ctx, date) {
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .4);
+    termiteHead(0, 0, 1, id, .005 + (attk * .0025), hit, ctx, date);
+}
+
+function drawWorkerTermite(id, color, attk = false, hit = false, ctx = _ctx, date) {
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .4);
+
+    ctx.beginPath();
+    ctx.arc(-1.1, 0, .667, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    termiteHead(0, 0, 1, id, .005 + (attk * .003), hit, ctx, date);
+}
+
+function drawSoldierTermite(id, color, attk = false, hit = false, ctx = _ctx, date) {
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .4);
+
+    ctx.beginPath();
+    ctx.arc(-1.1, 0, .667, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    drawWings(-.667, 0, 1.25, id, .002 + (attk * .0025), hit, ctx, date);
+    termiteHead(0, 0, 1, id, .005 + (attk * .0035), hit, ctx, date);
+}
+
+function drawTermiteOvermind(id, color, attk = false, hit = false, ctx = _ctx, date) {
+    ctx.save();
+    ctx.strokeStyle = mixColors(colors.stingerBlack, "#FF0000", hit * .5);
+    ctx.lineWidth = .25;
+    const rotation = Math.sin(date * (.001 + attk * .02) + id / 4) * .03;
+    ctx.beginPath();
+    ctx.moveTo(0, -.5);
+    ctx.rotate(-rotation);
+    ctx.lineTo(1.175, -.175);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.rotate(rotation);
+    ctx.beginPath();
+    ctx.moveTo(0, .5);
+    ctx.rotate(rotation);
+    ctx.lineTo(1.175, .175);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .2);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+
+function drawCentipedeSegment(color, hit = false, ctx = _ctx) {
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .2, 0);
+    ctx.beginPath();
+    ctx.arc(0, -.875, .375, 0, TAU);
+    ctx.arc(0, .875, .375, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .2);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawCentipedeHead(id, color, hit = false, ctx = _ctx, date) {
+    drawCentipedeSegment(color, hit, ctx);
+
+    const rotation = Math.sin(date * .005 + id / 6) * .1;
+
+    setStyle(ctx, mixColors(colors.lighterBlack, "#FF0000", hit * .5), .2);
+    ctx.beginPath();
+    ctx.moveTo(.75, -.2);
+    ctx.quadraticCurveTo(1.2, -.3 - rotation, 1.3, -.5 - rotation);
+    ctx.moveTo(.75, .2);
+    ctx.quadraticCurveTo(1.2, .3 + rotation, 1.3, .5 + rotation);
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function drawDandelionCore(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.white, "#FF0000", hit * .5), .15);
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawDandelionMissile(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.lighterBlack, "#FF0000", hit * .5), .6);
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-2.1, 0);
+    ctx.closePath();
+    ctx.stroke();
+
+    setStyle(ctx, mixColors(colors.white, "#FF0000", hit * .5), .2);
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+const spongeColors = [
+    colors.peach,
+    colors.rosePink,
+    colors.sandGold,
+    colors.diepPentagon
+];
+
+const spongePtSize = TAU / 30;
+
+function drawSponge(id, friendly, hit = false, ctx = _ctx) {
+    ctx.save();
+    setStyle(ctx, mixColors(friendly ? colors.playerYellow : spongeColors[id % 4], "#FF0000", hit * .5), .1175);
+
+    ctx.scale(1.1, 1.1);
+    ctx.beginPath();
+    for (let i = 0; i < 15; i++) {
+        const angle = i * TAU / 15;
+        const max = angle + spongePtSize;
+
+        if (i === 0) {
+            const min = angle - spongePtSize;
+            ctx.moveTo(Math.cos(min) * .775, Math.sin(min) * .775);
+        }
+
+        ctx.quadraticCurveTo(Math.cos(angle), Math.sin(angle), Math.cos(max) * .775, Math.sin(max) * .775);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = ctx.strokeStyle;
+
+    for (let i = 0; i < 5; i++) {
+        const angle = i * TAU / 5;
+
+        ctx.beginPath();
+        ctx.arc(Math.cos(angle) * .5, Math.sin(angle) * .5, .15, 0, TAU);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(Math.cos(angle) * .25, Math.sin(angle) * .25, .1, 0, TAU);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(Math.cos(angle) * .1, Math.sin(angle) * .1, .05, 0, TAU);
+        ctx.closePath();
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawBubbleMob(color, altColor, hit = false, ctx = _ctx) {
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .1);
+    ctx.strokeStyle = ctx.fillStyle
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.globalAlpha *= .3;
+    ctx.fill();
+
+    ctx.globalAlpha *= 1.75;
+    ctx.stroke();
+
+    ctx.fillStyle = mixColors(altColor, "#FF0000", hit * .5);
+    ctx.beginPath();
+    ctx.arc(.34, -.34, .25, 0, TAU);
+    ctx.closePath();
+    ctx.globalAlpha *= .8;
+    ctx.fill();
+    ctx.globalAlpha /= .8;
+}
+
+function drawShellMob(ctx = _ctx, color, hit = false) {
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .135);
+    const fill = ctx.fillStyle;
+
+    // Tail
+    ctx.fillStyle = ctx.strokeStyle
+    ctx.beginPath();
+    ctx.lineTo(-.52, -.34);
+    ctx.lineTo(-.78, -.5);
+    ctx.quadraticCurveTo(-.61, 0, -.76, .5);
+    ctx.lineTo(-.52, .34);
+    ctx.lineTo(.21, .95);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    // Body
+    ctx.fillStyle = fill
+    ctx.beginPath();
+    ctx.lineTo(-.52, -.34);
+    ctx.arcTo(-.87, 0, -.52, .34, .45454545454545453);
+    ctx.lineTo(-.52, .34);
+    ctx.lineTo(.21, .95);
+    ctx.arcTo(3.13, 0, .21, -.95, 1);
+    ctx.lineTo(-.52, -.34);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    // Lines
+    ctx.beginPath();
+    ctx.moveTo(-.31, .07);
+    ctx.lineTo(.48, .2);
+    ctx.stroke();
+    ctx.moveTo(-.37, .16);
+    ctx.lineTo(.3, .5);
+    ctx.stroke();
+    ctx.moveTo(-.31, -.07);
+    ctx.lineTo(.48, -.2);
+    ctx.stroke();
+    ctx.moveTo(-.37, -.16);
+    ctx.lineTo(.3, -.5);
+    ctx.stroke();
+    ctx.closePath();
+}
+
+export class StarfishData {
+    constructor() {
+        this.legs = [1, 1, 1, 1, 1];
+        this.legGoals = [1, 1, 1, 1, 1];
+        this.livingCount = 5;
+    }
+
+    update(health) {
+        let realLegCount = (health / .2 + .5) | 0;
+
+        if (realLegCount > this.livingCount) {
+            this.revive();
+        }
+
+        if (realLegCount < this.livingCount) {
+            this.kill();
+        }
+
+        for (let i = 0; i < this.legs.length; i++) {
+            if (this.legs[i] !== this.legGoals[i]) {
+                this.legs[i] += (this.legGoals[i] - this.legs[i]) / 10;
+            }
+        }
+    }
+
+    revive() {
+        if (this.livingCount === 5) {
+            return;
+        }
+
+        const indexes = [0, 1, 2, 3, 4].sort(() => Math.random() - .5);
+
+        for (let i = 0; i < indexes.length; i++) {
+            if (this.legGoals[indexes[i]] === 0) {
+                this.legGoals[indexes[i]] = 1;
+                this.livingCount++;
+                return;
+            }
+        }
+    }
+
+    kill() {
+        if (this.livingCount === 0) {
+            return;
+        }
+
+        const indexes = [0, 1, 2, 3, 4].sort(() => Math.random() - .5);
+
+        for (let i = 0; i < indexes.length; i++) {
+            if (this.legGoals[indexes[i]] === 1) {
+                this.legGoals[indexes[i]] = 0;
+                this.livingCount--;
+                return;
+            }
+        }
+    }
+}
+
+function drawStarfishRender(hit = false, ctx = _ctx) {
+    setStyle(ctx, mixColors(colors.starfish, "#FF0000", hit * .5), .125);
+
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+        const angle = TAU / 5 * i;
+        const dist = 1.6;
+
+        if (i === 0) {
+            ctx.moveTo(Math.cos(angle - TAU / 10 * 1.8) * 1.6, Math.sin(angle - TAU / 10 * 1.8) * 1.6);
+        }
+
+        ctx.quadraticCurveTo(Math.cos(angle - TAU / 10) * .4, Math.sin(angle - TAU / 10) * .4, Math.cos(angle) * dist + Math.cos(angle - Math.PI / 2) * .2, Math.sin(angle) * dist + Math.sin(angle - Math.PI / 2) * .2);
+        ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist, .2, angle - Math.PI / 2, angle + Math.PI / 2);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = mixColors(ctx.fillStyle, colors.white, .3);
+    for (let i = 0; i < 5; i++) {
+        const angle = TAU / 5 * i;
+
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+
+        ctx.beginPath();
+        ctx.arc(cos * .4, sin * .4, .15, 0, TAU);
+        ctx.moveTo(cos * .9, sin * .9);
+        ctx.arc(cos * .9, sin * .9, .125, 0, TAU);
+        ctx.moveTo(cos * 1.4, sin * 1.4);
+        ctx.arc(cos * 1.4, sin * 1.4, .1125, 0, TAU);
+        ctx.fill();
+        ctx.closePath();
+    }
+}
+
+/**
+ * @param {boolean} hit
+ * @param {CanvasRenderingContext2D} ctx 
+ * @param {StarfishData} data
+ */
+function drawLivingStarfish(ctx = _ctx, color, hit = false, data) {
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .125);
+
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+        const angle = TAU / 5 * i;
+        const dist = 1 + .6 * data.legs[i];
+
+        if (i === 0) {
+            const otherDist = 1 + .6 * data.legs[4];
+            const k = 1.675 + .125 * data.legs[4];
+            ctx.moveTo(Math.cos(angle - TAU / 10 * k) * otherDist, Math.sin(angle - TAU / 10 * k) * otherDist);
+        }
+
+        ctx.quadraticCurveTo(Math.cos(angle - TAU / 10) * .4, Math.sin(angle - TAU / 10) * .4, Math.cos(angle) * dist + Math.cos(angle - Math.PI / 2) * .2, Math.sin(angle) * dist + Math.sin(angle - Math.PI / 2) * .2);
+        ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist, .2, angle - Math.PI / 2, angle + Math.PI / 2);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.fillStyle = mixColors(ctx.fillStyle, colors.white, .3);
+    for (let i = 0; i < 5; i++) {
+        const angle = TAU / 5 * i;
+        const alive = data.legs[i] > .5;
+
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+
+        ctx.beginPath();
+        ctx.arc(cos * .4, sin * .4, .15, 0, TAU);
+        ctx.moveTo(cos * .9, sin * .9);
+        ctx.arc(cos * .9, sin * .9, .125, 0, TAU);
+        if (alive) {
+            ctx.moveTo(cos * 1.4, sin * 1.4);
+            ctx.arc(cos * 1.4, sin * 1.4, .1125, 0, TAU);
+        }
+        ctx.fill();
+        ctx.closePath();
+    }
+}
+
+function drawLeechRender(ctx = _ctx) {
+    const fill = colors.lighterBlack;
+    const stroke = mixColors(fill, "#000000", .2);
+
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = .125;
+    ctx.beginPath();
+    ctx.moveTo(.5, -1);
+    ctx.quadraticCurveTo(.45, -1.125, .52, -1.25);
+    ctx.moveTo(.85, -1);
+    ctx.quadraticCurveTo(.85, -1.125, .8, -1.25);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(.65, -.85);
+    ctx.quadraticCurveTo(.5, .4, -.6, .9);
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = .5;
+    ctx.stroke();
+    ctx.strokeStyle = fill;
+    ctx.lineWidth = .3;
+    ctx.stroke();
+}
+
+/**
+ * 
+ * @param {boolean} h 
+ * @param {CanvasRenderingContext2D} ctx 
+ * @param {{x:number,y:number}[]} bodies 
+ */
+function drawLeechLive(h = false, ctx = _ctx, bodies = [], r, a = false, id, friendly = false) {
+    const fill = mixColors(friendly ? colors.playerYellow : colors.lighterBlack, "#FF0000", .5 * h);
+    const stroke = mixColors(fill, "#000000", .2);
+
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    const rotSpd = a ? .0075 : .0025;
+    const rotation = Math.sin(performance.now() * rotSpd + id / 4) * .075 - Math.PI / 10;
+
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = .3;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(0, -.8);
+    ctx.rotate(-rotation);
+    ctx.quadraticCurveTo(1.15, -1, 1.3, -.8);
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.rotate(rotation);
+
+    ctx.beginPath();
+    ctx.moveTo(0, .8);
+    ctx.rotate(rotation);
+    ctx.quadraticCurveTo(1.15, 1, 1.3, .8);
+    ctx.stroke();
+    ctx.closePath();
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+
+    ctx.rotate(-r);
+    bodies.forEach(body => {
+        ctx.lineTo(body.x, body.y);
+    });
+    ctx.rotate(r);
+
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.strokeStyle = fill;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+}
+
+function drawFlyWings(x, y, s, id, rotSpd, hit = false, ctx = _ctx, date) {
+    const rotation = Math.sin(date * rotSpd + id / 5) * .3 + Math.PI / 10;
+
+    ctx.save();
+    ctx.globalAlpha *= .3;
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.fillStyle = mixColors("#FFFFFF", "#FF0000", hit * .5);
+
+    ctx.beginPath();
+    ctx.rotate(rotation);
+    ctx.moveTo(0, -.25);
+    ctx.ellipse(-.55, -.25, .675, .4, 0, 0, TAU);
+    ctx.rotate(-rotation * 2);
+    ctx.moveTo(0, .52);
+    ctx.ellipse(-.55, .25, .675, .4, 0, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawFly(ctx, color, id, attack = false, hit = false, date) {
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .225);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    drawFlyWings(-.25, 0, 1.25, id, .0025 + (attack * .0125), hit, ctx, date);
+}
+
+function drawMoth(ctx, color, id, attack = false, hit = false, date) {
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .225);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    drawFlyWings(-.25, 0, 1.25, id, .0025 + (attack * .0125), hit, ctx, date);
+
+    const rotation = 1 + Math.sin(date * .0025 * (1 + attack * 1.5) + id * .2) * .1;
+
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .1, 0);
+    ctx.beginPath();
+    ctx.moveTo(.75, -.3);
+    ctx.quadraticCurveTo(1.3, -.35, 1.45, -.65 * rotation);
+    ctx.moveTo(.75, .3);
+    ctx.quadraticCurveTo(1.3, .35, 1.45, .65 * rotation);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(1.45, -.65 * rotation, .2, 0, TAU);
+    ctx.arc(1.45, .65 * rotation, .2, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawMaggot(ctx = _ctx, friendly, hit = false) {
+    setStyle(ctx, mixColors(friendly ? colors.playerYellow : colors.peach, "#FF0000", hit * .5), .2);
+    ctx.beginPath();
+    ctx.arc(-.4, .2, .25, 0, TAU);
+    ctx.arc(-.4, -.2, .25, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    setStyle(ctx, mixColors(friendly ? colors.playerYellow : colors.cumWhite, "#FF0000", hit * .5), .2);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 1, .7, 0, Math.PI * 3 / 4, Math.PI * 5 / 4, true);
+    ctx.quadraticCurveTo(0, -.2, 0, 0);
+    ctx.quadraticCurveTo(0, .2, -.6, .45);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0, .45);
+    ctx.quadraticCurveTo(.5, 0, 0, -.45);
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.arc(.65, .15, .15, 0, TAU);
+    ctx.arc(.65, -.15, .15, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawFirefly(ctx = _ctx, friendly, id, hit = false, date) {
+    setStyle(ctx, mixColors(friendly ? colors.playerYellow : colors.fireFlyLight, "#FF0000", hit * .5), .125);
+    ctx.beginPath();
+    ctx.ellipse(-1 * 1.25, 0, 1 * 1.25, .75 * 1.25, 0, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    setStyle(ctx, mixColors(friendly ? colors.playerYellow : colors.fireFlyLight, "#FF0000", hit * .5), .125);
+    ctx.beginPath();
+    ctx.arc(-1 * 1.25, 0, .5 * 1.25, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    drawFlyWings(-.25 * 1.25, 0, 1.25 * 1.25, id, .0025, hit, ctx, date);
+
+    setStyle(ctx, mixColors(friendly ? colors.playerYellow : colors.ants, "#FF0000", hit * .5), .225);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawBumbleBee(ctx = _ctx, id, hit = false, date) {
+    setStyle(ctx, mixColors(colors.playerYellow, "#FF0000", hit * .5), .175);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 1, .825, 0, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.save();
+    ctx.clip();
+
+    ctx.beginPath();
+    ctx.rect(-1, -1, .334, 2);
+    ctx.rect(-.334, -1, .334, 2);
+    ctx.rect(.334, -1, .334, 2);
+    ctx.fillStyle = mixColors(colors.stingerBlack, "#FF0000", hit * .5);
+    ctx.fill();
+
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 1, .825, 0, 0, TAU);
+    ctx.closePath();
+    ctx.stroke();
+
+    const rotation = 1 + Math.sin(date / 334 + id * .2) * .1;
+
+    setStyle(ctx, mixColors(colors.stingerBlack, "#FF0000", hit * .5), .1, 0);
+    ctx.beginPath();
+    ctx.moveTo(.85, -.15);
+    ctx.quadraticCurveTo(1.25, -.2, 1.4, -.45 * rotation);
+    ctx.moveTo(.85, .15);
+    ctx.quadraticCurveTo(1.25, .2, 1.4, .45 * rotation);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(1.4, -.45 * rotation, .15, 0, TAU);
+    ctx.arc(1.4, .45 * rotation, .15, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawSquareMob(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.diepSquare, "#FF0000", hit * .5), .15);
+    polygon(ctx, 4, .925, 0);
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawTriangleMob(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.diepTriangle, "#FF0000", hit * .5), .15);
+    polygon(ctx, 3, .925, 0);
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawPentagonMob(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.diepPentagon, "#FF0000", hit * .5), .15);
+    polygon(ctx, 5, .925, 0);
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawHellBeetle(ctx = _ctx, color, id, hit = false, attack = false, date) {
+    const pincerRot = Math.sin(date * (.0085 + .0085 * attack) + id / 4) * .15 + Math.PI / 20;
+
+    setStyle(ctx, mixColors(mixColors(colors.stingerBlack, color, .25), "#FF0000", hit * .5), .1);
+    ctx.save();
+    ctx.translate(1, -.2);
+    ctx.rotate(pincerRot);
+    ctx.beginPath();
+    ctx.lineTo(-.2805, -.1445);
+    ctx.quadraticCurveTo(.306, -.374, .6885, -.085);
+    ctx.quadraticCurveTo(.7905, -.0085, .697, .0765);
+    ctx.quadraticCurveTo(.3655, 0, -.2125, .204);
+    ctx.closePath();
+    ctx.fill();
+    ctx.rotate(-pincerRot);
+    ctx.translate(0, .4);
+    ctx.rotate(-pincerRot);
+    ctx.beginPath();
+    ctx.lineTo(-.2805, .1445);
+    ctx.quadraticCurveTo(.306, .374, .6885, .085);
+    ctx.quadraticCurveTo(.7905, .0085, .697, -.0765);
+    ctx.quadraticCurveTo(.3655, 0, -.2125, -.204);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    drawBeetle(id, color, hit, ctx, attack, date);
+}
+
+function drawHellSpider(ctx = _ctx, color, id, hit = false, attack = fals, date) {
+    const pincerRot = Math.sin(date * (.0085 + .0085 * attack) + id / 4) * .15 + Math.PI / 20;
+
+    setStyle(ctx, mixColors(mixColors(colors.stingerBlack, color, .25), "#FF0000", hit * .5), .1);
+    ctx.save();
+    ctx.translate(.7, -.2);
+    ctx.rotate(pincerRot);
+    ctx.beginPath();
+    ctx.lineTo(-.2805, -.1445);
+    ctx.quadraticCurveTo(.306, -.374, .6885, -.085);
+    ctx.quadraticCurveTo(.7905, -.0085, .697, .0765);
+    ctx.quadraticCurveTo(.3655, 0, -.2125, .204);
+    ctx.closePath();
+    ctx.fill();
+    ctx.rotate(-pincerRot);
+    ctx.translate(0, .4);
+    ctx.rotate(-pincerRot);
+    ctx.beginPath();
+    ctx.lineTo(-.2805, .1445);
+    ctx.quadraticCurveTo(.306, .374, .6885, .085);
+    ctx.quadraticCurveTo(.7905, .0085, .697, -.0765);
+    ctx.quadraticCurveTo(.3655, 0, -.2125, -.204);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Legs
+    ctx.strokeStyle = mixColors(colors.stingerBlack, "#FF0000", hit * .5);
+    ctx.lineWidth = .334;
+    ctx.beginPath();
+    for (let i = 0; i < 4; i++) {
+        const rot = i * .52 - .79 + Math.cos(2 + date * (.0025 + (attack * .0125)) + i + id / 3) * .2;
+
+        ctx.rotate(rot);
+        ctx.moveTo(0, -2.2);
+        ctx.quadraticCurveTo(.2, -1, 0, 0);
+        ctx.quadraticCurveTo(-.2, 1, 0, 2.2);
+        ctx.rotate(-rot);
+    }
+    ctx.stroke();
+    ctx.closePath();
+
+    // Body
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .235);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawHellYellowjacket(ctx = _ctx, color, id, hit = false, attack = false, date) {
+    const myColor = mixColors(color, "#FF0000", hit * .5);
+    const myAltColor = mixColors(colors.stingerBlack, "#FF0000", hit * .5);
+    const stingerRotation = attack ? Math.sin(date / 60 + id * .1) * .03 : (date + id * 240) % (9000 + id * 8) > (8500 + id * 4) ? Math.sin(date / 60 + id * .1) * .025 : 0;
+
+    setStyle(ctx, mixColors(myColor, "#000000", .2), .15, 0);
+    ctx.beginPath();
+    ctx.moveTo(-1.55, stingerRotation);
+    ctx.lineTo(-.25, -.4);
+    ctx.lineTo(-.25, .4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    setStyle(ctx, myColor, .1);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 1, .7, 0, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.save();
+    ctx.clip();
+
+    ctx.beginPath();
+    ctx.rect(-1, -1, .5, 2);
+    ctx.rect(.1, -1, .4, 2);
+    ctx.fillStyle = myAltColor;
+    ctx.fill();
+
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 1, .667, 0, 0, TAU);
+    ctx.closePath();
+    ctx.stroke();
+
+    setStyle(ctx, myAltColor, .1, 0);
+
+    ctx.beginPath();
+    ctx.moveTo(.85, .16);
+    ctx.quadraticCurveTo(1.36, .18, 1.68, .49);
+    ctx.quadraticCurveTo(1.26, .3, .85, .16);
+    ctx.moveTo(.85, -.16);
+    ctx.quadraticCurveTo(1.36, -.18, 1.68, -.49);
+    ctx.quadraticCurveTo(1.26, -.3, .85, -.16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Wings
+    const wingRotation = Math.sin(date * (.0025 + (attack * .0125)) + id / 5) * .3 + Math.PI / 10;
+
+    ctx.save();
+    ctx.globalAlpha *= .3;
+    ctx.translate(-.25, 0);
+    ctx.scale(1.25, 1.25);
+    ctx.fillStyle = mixColors("#FFFFFF", "#FF0000", hit * .5);
+
+    ctx.beginPath();
+    ctx.rotate(wingRotation);
+    ctx.moveTo(-.2, -.3);
+    ctx.ellipse(-.55, -.25, .7, .4, 0, 0, TAU);
+    ctx.rotate(-wingRotation * 2);
+    ctx.moveTo(-.2, .3);
+    ctx.ellipse(-.55, .25, .7, .4, 0, 0, TAU);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+const spiritColors = [
+    colors.rockGray,
+    colors.lighterBlack,
+    colors.stingerBlack,
+    mixColors(colors.ancient, colors.rockGray, .5),
+    mixColors(colors.ancient, colors.lighterBlack, .5),
+    mixColors(colors.ancient, colors.stingerBlack, .5),
+    mixColors(colors.omega, colors.rockGray, .5),
+    mixColors(colors.omega, colors.lighterBlack, .5),
+    mixColors(colors.omega, colors.stingerBlack, .5),
+    mixColors(colors.orange, colors.rockGray, .5),
+    mixColors(colors.orange, colors.lighterBlack, .5),
+    mixColors(colors.orange, colors.stingerBlack, .5),
+    mixColors(colors.scorpionBrown, colors.rockGray, .5),
+    mixColors(colors.scorpionBrown, colors.lighterBlack, .5),
+    mixColors(colors.scorpionBrown, colors.stingerBlack, .5),
+    mixColors(colors.irisPurple, colors.rockGray, .5),
+    mixColors(colors.irisPurple, colors.lighterBlack, .5),
+    mixColors(colors.irisPurple, colors.stingerBlack, .5),
+]
+
+const SpiritSpiral = new Path2D("m0 0c-.011-.0114.0151-.0218.0222-.0215.0405.0016.0498.0542.0385.0844-.0263.0703-.1173.0806-.1764.0487-.1042-.0562-.1155-.1969-.0563-.2896.0909-.1422.2899-.1543.4206-.0622.1841.1298.1967.3948.067.5671-.1727.2295-.5101.2423-.7277.0709-.2782-.2192-.2911-.6351-.0741-.9012.269-.33.7691-.3427 1.0868-.0767.3825.3203.3973.9056.0833 1.2781")
+function drawSpirit(ctx = _ctx, friendly, id, hit = false) {
+    setStyle(ctx, mixColors(friendly ? mixColors(colors.playerYellow, colors.stingerBlack, .5) : spiritColors[id % spiritColors.length], "#FF0000", hit * .5), .2);
+
+    ctx.save();
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.globalAlpha = .5;
+    ctx.fill();
+    ctx.closePath();
+    ctx.stroke(SpiritSpiral);
+    ctx.rotate(Math.PI);
+    ctx.stroke(SpiritSpiral);
+
+    ctx.restore();
+}
+
+function drawStickbug(ctx = _ctx, id, color, altColor, altColor2, attack, hit = false, date) {
+    setStyle(ctx, mixColors(altColor, "#FF0000", hit * .5), .2)
+
+    // legs
+
+    ctx.beginPath();
+
+    for (let i = 0; i < 3; i++) {
+        const legRot = Math.cos(date * (.0025 + (attack * .0125)) + i + id) * (i - .5) * .1;
+        ctx.moveTo(-1, 0.5);
+        ctx.rotate(legRot)
+        ctx.quadraticCurveTo(-1.5, 1.6, -1.75, 1.7);
+        ctx.rotate(-legRot)
+
+        ctx.moveTo(-1, -0.5);
+        ctx.rotate(legRot)
+        ctx.quadraticCurveTo(-1.5, -1.6, -1.75, -1.7);
+        ctx.rotate(-legRot)
+
+        ctx.translate(1, 0);
+    };
+
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.translate(-3, 0);
+
+    // head
+
+    setStyle(ctx, mixColors(altColor2, "#FF0000", hit * .5), .2);
+
+    ctx.beginPath();
+    ctx.arc(1, 0, .6, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    // body
+
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .2);
+
+    ctx.beginPath();
+    ctx.moveTo(1.5, 0.75);
+    ctx.quadraticCurveTo(.5, 0, 1.5, -0.75);
+    ctx.quadraticCurveTo(.5, -1, -1, -0.75);
+    ctx.quadraticCurveTo(-3.5, 0, -1, 0.75);
+    ctx.quadraticCurveTo(.5, 1, 1.5, 0.75);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function drawShrub(id, color, ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .125);
+
+    for (let i = 9; i >= 7; i--) {
+        polygon(ctx, i, 1 - (0.25 * (9 - i)), 0);
+        ctx.fill();
+        ctx.stroke();
+    };
+
+    for (let i = 0; i < 5; i++) {
+        const angle = Math.sin(i * 10000 + id) * TAU;
+        const radius = Math.sin(i * 1000 + id) * .02 + .2;
+        const d = Math.sin(i * 10000 + id) * .7;
+        ctx.fillStyle = mixColors(mixColors(color, "#000000", .115 * Math.sin(1e3 * i + id) + .2), "#FF0000", hit * .5);
+
+        ctx.beginPath();
+        ctx.arc(Math.cos(angle) * d, Math.sin(angle) * d, radius, 0, TAU);
+        ctx.fill();
+    };
+}
+
+const PumpkinPath = new Path2D("M.7247-.3319C.6942-.3316.6609-.3288.6245-.3232.1584-.2507 0 0 0 0S.1584.2507.6245.3232C1.0907.3956 1.0457 0 1.0457 0S1.0839-.3362.7247-.3319Z");
+function drawPumpkin(color, altColor, ctx, hit) {
+    setStyle(ctx, mixColors(color, "#FF0000", hit * .5), .125);
+
+    for (let i = 0; i < 10; i++) {
+        ctx.fill(PumpkinPath);
+        ctx.stroke(PumpkinPath);
+        ctx.rotate(TAU / 10);
+    }
+
+    setStyle(ctx, mixColors(altColor, "#FF0000", hit * .5), .1);
+    ctx.beginPath();
+    polygon(ctx, 7, .25, 0);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function drawJackOLantern(color, altColor, ctx, hit, date) {
+    // Fire animation
+    ctx.save();
+    ctx.globalAlpha *= .5;
+    ctx.fillStyle = mixColors(mixColors(color, "#000000", Math.sin(date) * .5 + .5), "#FF0000", hit * .5);
+    ctx.beginPath();
+    for (let i = 0; i < 14; i++) {
+        let a = i * TAU / 14,
+            d = .75 + Math.sin(1 + date + i * Math.cos(8 + date / 1000) * .5);
+
+        if (i === 0) {
+            ctx.moveTo(Math.cos(a) * d, Math.sin(a) * d);
+        } else {
+            ctx.lineTo(Math.cos(a) * d, Math.sin(a) * d);
+        }
+    }
+
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    drawPumpkin(color, altColor, ctx, hit);
+}
+
+const crabBodyColors = [
+    colors.crabBodyOrange,
+    colors.diepTriangle,
+    colors.antHole
+]
+
+function drawCrab(ctx = _ctx, friendly, id, attack, hit = false, date) {
+    setStyle(ctx, mixColors(colors.crabLimbBrown, "#FF0000", hit * .5), .2);
+
+    for (let i = 0; i < 4; i++) {
+
+        ctx.lineWidth = .25;
+
+        const legRot = Math.cos(2 + date * (.0025 + (attack * .0125)) + id + i) * -.4;
+        const legAng = TAU / 14 * (i - 1.5);
+
+        ctx.beginPath();
+        ctx.rotate(legAng);
+        ctx.moveTo(0, .75);
+        ctx.rotate(legRot);
+        ctx.lineTo(0, 1.5);
+        ctx.lineTo(0, 1.825);
+        ctx.rotate(-legRot - legAng);
+        ctx.stroke();
+        ctx.closePath();
+
+        ctx.beginPath();
+        ctx.rotate(legAng);
+        ctx.moveTo(0, -.75);
+        ctx.rotate(-legRot);
+        ctx.lineTo(0, -1.5);
+        ctx.lineTo(0, -1.825);
+        ctx.rotate(legRot - legAng);
+        ctx.stroke();
+        ctx.closePath();
+    }
+
+    // claws
+
+    const clawRot = Math.cos(date * (.0025 + (attack * .0125)) + id) * -.4;
+
+    ctx.translate(.75, -.525);
+    ctx.rotate(clawRot);
+    ctx.scale(.375, .375);
+
+    ctx.translate(.5, -.5);
+
+    ctx.beginPath();
+    ctx.moveTo(-.96, -.31);
+    ctx.bezierCurveTo(.5, -.91, .86, .23, 1, .54);
+    ctx.lineTo(.4, .09);
+    ctx.lineTo(.56, .75);
+    ctx.bezierCurveTo(.1, .33, -.38, .02, -1, .22);
+    ctx.bezierCurveTo(-.95, .05, -.86, -.12, -.96, -.31);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.translate(-.5, .5);
+
+    ctx.scale(1 / .375, 1 / .375);
+    ctx.rotate(-clawRot);
+    ctx.translate(-.75, .525);
+
+    ctx.translate(.75, .525);
+    ctx.rotate(-clawRot);
+    ctx.scale(.375, .375);
+
+    ctx.translate(.5, .5);
+
+    ctx.beginPath();
+    ctx.moveTo(-.96, .31);
+    ctx.bezierCurveTo(.5, .91, .86, -.23, 1, -.54);
+    ctx.lineTo(.4, -.09);
+    ctx.lineTo(.56, -.75);
+    ctx.bezierCurveTo(.1, -.33, -.38, -.02, -1, -.22);
+    ctx.bezierCurveTo(-.95, -.05, -.86, .12, -.96, .31);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.translate(-.5, -.5);
+
+    ctx.scale(1 / .375, 1 / .375);
+    ctx.rotate(clawRot);
+    ctx.translate(-.75, -.525);
+
+    setStyle(ctx, mixColors(friendly ? colors.playerYellow : crabBodyColors[id * 1000 % crabBodyColors.length], "#FF0000", hit * .5), .2);
+
+    ctx.beginPath();
+    ctx.ellipse(0, 0, .825, 1.125, 0, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.beginPath();
+    ctx.moveTo(.375, .375);
+    ctx.quadraticCurveTo(0, .1625, -.375, .375);
+    ctx.moveTo(.375, -.375);
+    ctx.quadraticCurveTo(0, -.1625, -.375, -.375);
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function drawDiepTank(ctx = _ctx, hit = false) {
+    setStyle(ctx, mixColors(colors.rockGray, "#FF0000", hit * .5), .2);
+    ctx.fillRect(0, -.4, 1.8, .8);
+    ctx.strokeRect(0, -.4, 1.8, .8);
+
+    setStyle(ctx, mixColors(colors.diepBlue, "#FF0000", hit * .5), .2);
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+}
+
+const mobCache = new Map();
+
+export function drawMob(id, index, rarity, hit = false, ctx = _ctx, attack = false, friend = false, rot = 0, extra = undefined, date = performance.now()) {
+    if (options.cacheMobAssets) {
+        const key = `${index}-${rarity}-${friend}`;
+        let cached = mobCache.get(key);
+        if (!cached) {
+            const img = document.createElement("canvas");
+            const _ctx = img.getContext("2d");
+
+            const baseSize = 325;
+            img.width = img.height = baseSize;
+            _ctx.translate(baseSize / 2, baseSize / 2);
+            _ctx.scale(baseSize / 6, baseSize / 6);
+
+            _ctx.save();
+            _ctx.lineCap = "round";
+            _ctx.lineJoin = "round";
+            
+            mobRender(_ctx, id, index, rarity, hit, attack, friend, rot, extra, date);
+            _ctx.restore();
+
+            cached = img;
+            mobCache.set(key, cached);
+        }
+        const drawSize = 6;
+        ctx.drawImage(cached, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+        return;
+    }
+    mobRender(ctx, id, index, rarity, hit, attack, friend, rot, extra, date);
+}
+
+function mobRender(ctx, id, index, rarity, hit, attack, friend, rot, extra, date = performance.now()) {
+    if (state.mobConfigs[index].drawing) {
+        const actions = state.mobConfigs[index].drawing.actions;
+        for (const action of actions) {
+            const [actionName, ...args] = action;
+            const actionFunc = Drawing.reverseActions[actionName];
+
+            if (!actionFunc) {
+                throw new Error(`Unknown action: ${actionName} ${action}`);
+            }
+
+            switch (actionFunc) {
+                case "circle":
+                    ctx.arc(args[0], args[1], args[2], 0, Math.PI * 2);
+                    break;
+                case "line":
+                    ctx.moveTo(args[0], args[1]);
+                    ctx.lineTo(args[2], args[3]);
+                    break;
+                case "fill":
+                    ctx.fillStyle = mixColors(args[0], "#FF0000", hit * .5);
+                    ctx.fill();
+                    break;
+                case "stroke":
+                    ctx.strokeStyle = mixColors(mixColors(args[0], "#FF0000", hit * .5), "#000000", args[2]);
+                    ctx.lineWidth = args[1];
+                    ctx.stroke();
+                    break;
+                case "paint":
+                    ctx.fillStyle = mixColors(args[0], "#FF0000", hit * .5);;
+                    ctx.strokeStyle = mixColors(mixColors(args[0], "#FF0000", hit * .5), "#000000", args[2]);
+                    ctx.lineWidth = args[1];
+                    ctx.fill();
+                    ctx.stroke();
+                    break;
+                case "polygon": {
+                    let arg2 = args[2];
+                
+                    if (isNaN(arg2)) {
+                        if (typeof arg2 === "string" && arg2.startsWith("date_")) {
+                            const mult = parseFloat(arg2.split("_")[1]);
+                            arg2 = date * (isNaN(mult) ? 1 : mult);
+                        } else if (arg2 === "date") {
+                            arg2 = date;
+                        } else {
+                            arg2 = 0;
+                        }
+                    } else {
+                        arg2 = Number(arg2);
+                    }
+                
+                    polygon(ctx, args[0], args[1], arg2);
+                    break;
+                }
+                case "spikeBall": {
+                    let arg2 = args[2];
+                
+                    if (isNaN(arg2)) {
+                        if (typeof arg2 === "string" && arg2.startsWith("date_")) {
+                            const mult = parseFloat(arg2.split("_")[1]);
+                            arg2 = date * (isNaN(mult) ? 1 : mult);
+                        } else if (arg2 === "date") {
+                            arg2 = date;
+                        } else {
+                            arg2 = 0;
+                        }
+                    } else {
+                        arg2 = Number(arg2);
+                    }
+                
+                    spikeBall(ctx, args[0], args[1], arg2);
+                    break;
+                }
+                case "dipPolygon": {
+                    let arg3 = args[3];
+                
+                    if (isNaN(arg3)) {
+                        if (typeof arg3 === "string" && arg3.startsWith("date_")) {
+                            const mult = parseFloat(arg3.split("_")[1]);
+                            arg3 = date * (isNaN(mult) ? 1 : mult);
+                        } else if (arg3 === "date") {
+                            arg3 = date;
+                        } else {
+                            arg3 = 0;
+                        }
+                    } else {
+                        arg3 = Number(arg3);
+                    }
+                
+                    dipPolygon(ctx, args[0], args[1], args[2], arg3);
+                    break;
+                }
+                case "opacity":
+                    ctx.globalAlpha = args[0];
+                    break;
+                case "blur":
+                    ctx.shadowColor = args[0];
+                    ctx.shadowBlur = args[1];
+                    break;
+                case "noBlur":
+                    ctx.shadowBlur = 0;
+                    break;
+                case "ellipse": {
+                    let arg4 = args[4];
+                
+                    if (isNaN(arg4)) {
+                        if (typeof arg4 === "string" && arg4.startsWith("date_")) {
+                            const mult = parseFloat(arg4.split("_")[1]);
+                            arg4 = date * (isNaN(mult) ? 1 : mult);
+                        } else if (arg4 === "date") {
+                            arg4 = date;
+                        } else {
+                            arg4 = 0;
+                        }
+                    } else {
+                        arg4 = Number(arg4);
+                    }
+                
+                    ctx.ellipse(args[0], args[1], args[2], args[3], arg4, 0, Math.PI * 2);
+                    break;
+                }
+                default:
+                    ctx[actionFunc](...args);
+                    break;
+            }
+        }
+
+        return;
+    }
+
+    switch (index) {
+        case 0:
+            drawLadybug(id, friend ? colors.playerYellow : colors.ladybugRed, hit, ctx, index, rarity);
+            break;
+        case 1:
+            drawRock(id, friend ? colors.playerYellow : colors.rockGray, rarity, hit, ctx);
+            break;
+        case 2:
+            drawBee(id, hit, ctx, date);
+            break;
+        case 3:
+            drawSpider(ctx, id, friend ? colors.playerYellow : colors.spider, attack, hit, date);
+            break;
+        case 4:
+            drawBeetle(id, friend ? colors.playerYellow : colors.beetlePurple, hit, ctx, attack, date);
+            break;
+        case 5:
+            drawLeafbug(id, friend ? colors.playerYellow : colors.leafGreen, attack, hit, ctx, date);
+            break;
+        case 6:
+            drawRoach(hit, friend, ctx);
+            break;
+        case 7:
+            drawHornet(id, friend ? colors.playerYellow : colors.hornet, colors.stingerBlack, hit, ctx, date);
+            break;
+        case 8:
+            drawMantis(id, friend ? colors.playerYellow : colors.peaGreen, attack, hit, ctx, date);
+            break;
+        case 9:
+            drawPupa(hit, friend ? colors.playerYellow : colors.peaGreen, ctx);
+            break;
+        case 10:
+            drawSandstorm(id, friend ? colors.playerYellow : colors.sand, attack, hit, ctx, date);
+            break;
+        case 11:
+            drawScorpion(id, friend ? colors.playerYellow : colors.scorpionBrown, hit, ctx, date);
+            break;
+        case 12:
+            drawDemon(id, friend, hit, ctx, attack, date);
+            break;
+        case 13:
+            drawJellyfish(id, friend ? colors.playerYellow : colors.white, attack, hit, ctx, date);
+            break;
+        case 14:
+            drawCactusMob(rarity, friend ? colors.playerYellow : colors.cactusGreen, hit, ctx);
+            break;
+        case 15:
+            drawBabyAnt(id, friend ? colors.playerYellow : colors.ants, attack, hit, ctx, date);
+            break;
+        case 16:
+            drawWorkerAnt(id, friend ? colors.playerYellow : colors.ants, attack, hit, ctx, date);
+            break;
+        case 17:
+            drawSoldierAnt(id, friend ? colors.playerYellow : colors.ants, attack, hit, ctx, date);
+            break;
+        case 18:
+            drawQueenAnt(id, friend ? colors.playerYellow : colors.ants, attack, hit, ctx, date);
+            break;
+        case 19:
+            drawAntHole(hit, friend ? colors.playerYellow : colors.antHole, ctx);
+            break;
+        case 20:
+            drawBabyFireAnt(id, friend ? colors.playerYellow : colors.fireAnt, attack, hit, ctx, date);
+            break;
+        case 21:
+            drawWorkerFireAnt(id, friend ? colors.playerYellow : colors.fireAnt, attack, hit, ctx, date);
+            break;
+        case 22:
+            drawSoldierFireAnt(id, friend ? colors.playerYellow : colors.fireAnt, attack, hit, ctx, date);
+            break;
+        case 23:
+            drawQueenFireAnt(id, friend ? colors.playerYellow : colors.fireAnt, attack, hit, ctx, date);
+            break;
+        case 24:
+            drawFireAntHole(hit, friend ? colors.playerYellow : colors.fireAnt, ctx);
+            break;
+        case 25:
+            drawBabyTermite(id, friend ? colors.playerYellow : colors.termite, attack, hit, ctx, date);
+            break;
+        case 26:
+            drawWorkerTermite(id, friend ? colors.playerYellow : colors.termite, attack, hit, ctx, date);
+            break;
+        case 27:
+            drawSoldierTermite(id, friend ? colors.playerYellow : colors.termite, attack, hit, ctx, date);
+            break;
+        case 28:
+            drawTermiteOvermind(id, friend ? colors.playerYellow : colors.termite, attack, hit, ctx, date);
+            break;
+        case 29:
+            drawTermiteMound(hit, friend, ctx);
+            break;
+        case 30: // Ant Egg
+        case 31: // Queen Ant Egg
+            basicPetal(ctx, hit, colors.peach);
+            break;
+        case 32: // Fire Ant Egg
+        case 33: // Queen Fire Ant Egg
+            basicPetal(ctx, hit, mixColors(colors.peach, colors.fireAnt, .2));
+            break;
+        case 34: // Termite Egg
+            basicPetal(ctx, hit, mixColors(colors.peach, colors.termite, .5));
+            break;
+        case 35:
+            drawLadybug(id, friend ? colors.playerYellow : colors.evilLadybugRed, hit, ctx, index, rarity);
+            break;
+        case 36:
+            drawLadybug(id, friend ? colors.playerYellow : colors.shinyLadybugGold, hit, ctx, index, rarity);
+            break;
+        case 37:
+            drawLadybug(id, friend ? colors.playerYellow : colors.lightningTeal, hit, ctx, index, rarity);
+            break;
+        case 38:
+            drawCentipedeHead(id, friend ? colors.playerYellow : colors.peaGreen, hit, ctx, date);
+            break;
+        case 39:
+            drawCentipedeSegment(friend ? colors.playerYellow : colors.peaGreen, hit, ctx);
+            break;
+        case 40:
+            drawCentipedeHead(id, friend ? colors.playerYellow : colors.sand, hit, ctx, date);
+            break;
+        case 41:
+            drawCentipedeSegment(friend ? colors.playerYellow : colors.sand, hit, ctx);
+            break;
+        case 42:
+            drawCentipedeHead(id, friend ? colors.playerYellow : colors.irisPurple, hit, ctx, date);
+            break;
+        case 43:
+            drawCentipedeSegment(friend ? colors.playerYellow : colors.irisPurple, hit, ctx);
+            break;
+        case 44:
+            drawDandelionCore(ctx, hit);
+            break;
+        case 45:
+            drawSponge(id, friend, hit, ctx);
+            break;
+        case 46:
+            drawBubbleMob(friend ? colors.playerYellow : colors.white, friend ? colors.playerYellow : colors.white, hit, ctx);
+            break;
+        case 47:
+            drawShellMob(ctx, friend ? colors.playerYellow : colors.peach, hit);
+            break;
+        case 48:
+            drawLivingStarfish(ctx, friend ? colors.playerYellow : colors.starfish, hit, extra);
+            break;
+        case 49:
+            drawLeechLive(hit, ctx, extra, rot, attack, id, friend);
+            break;
+        case 50:
+            drawMaggot(ctx, friend, hit);
+            break;
+        case 51:
+            drawFirefly(ctx, friend, id, hit, date);
+            break;
+        case 52:
+            drawBumbleBee(ctx, id, hit, date);
+            break;
+        case 53:
+            drawMoth(ctx, friend ? colors.playerYellow : colors.spider, id, attack, hit, date);
+            break;
+        case 54:
+            drawFly(ctx, friend ? colors.playerYellow : colors.ants, id, attack, hit, date);
+            break;
+        case 55:
+            drawSquareMob(ctx, hit);
+            break;
+        case 56:
+            drawTriangleMob(ctx, hit);
+            break;
+        case 57:
+            drawPentagonMob(ctx, hit);
+            break;
+        case 58:
+            drawHellBeetle(ctx, friend ? colors.playerYellow : colors.hellMobColor, id, hit, attack, date);
+            break;
+        case 59:
+            drawHellSpider(ctx, friend ? colors.playerYellow : colors.hellMobColor, id, hit, attack, date);
+            break;
+        case 60:
+            drawHellYellowjacket(ctx, friend ? colors.playerYellow : colors.hellMobColor, id, hit, attack, date);
+            break;
+        case 61: // Termite Ant Egg Poop
+            basicPetal(ctx, hit, mixColors(colors.peach, colors.termite, .5));
+            break;
+        case 62:
+            drawSpirit(ctx, friend, id, hit)
+            break;
+        case 63:
+            drawHornet(id, friend ? colors.playerYellow : colors.wasp, friend ? mixColors(colors.stingerBlack, colors.playerYellow, .1) : colors.waspDark, hit, ctx, date);
+            break;
+        case 64:
+            drawStickbug(ctx, id, friend ? colors.playerYellow : colors.peach, colors.spider, colors.uncommon, attack, hit, date);
+            break;
+        case 65:
+            drawShrub(id, friend ? colors.playerYellow : colors.shrubGreen, ctx, hit)
+            break;
+        case 66:
+            drawCentipedeHead(id, friend ? colors.playerYellow : colors.hellMobColor, hit, ctx, date);
+            break;
+        case 67:
+            drawCentipedeSegment(friend ? colors.playerYellow : colors.hellMobColor, hit, ctx);
+            break;
+        case 68: // Wilt Head
+        case 69: // Wilt Segment
+            drawShrub(id, mixColors(friend ? colors.playerYellow : colors.rockGray, "#000000", .25 + Math.sin(id * 1000) * .125), ctx, hit);
+            break;
+        case 70:
+            drawPumpkin(friend ? colors.playerYellow : colors.ancient, colors.cactusGreen, ctx, hit);
+            break;
+        case 71:
+            drawJackOLantern(friend ? colors.playerYellow : colors.ancient, colors.cactusGreen, ctx, hit, date);
+            break;
+        case 72:
+            drawCrab(ctx, friend, id, attack, hit, date)
+            break;
+        case 73:
+            drawDiepTank(ctx, hit);
+            break;
+    }
+}
+
+const UIMobCache = new Map();
+
+export function drawUIMob(index, rarity, ctx = _ctx) {
+    const key = `${index}-${rarity}`;
+    let cached = UIMobCache.get(key);
+
+    if (!cached) {
+        const img = document.createElement("canvas");
+        const _ctx = img.getContext("2d");
+
+        const baseSize = 256;
+        img.width = img.height = baseSize;
+
+        _ctx.translate(baseSize / 2, baseSize / 2);
+        _ctx.scale(baseSize / 7, baseSize / 7);
+
+        _ctx.save();
+        _ctx.lineCap = "round";
+        _ctx.lineJoin = "round";
+
+        switch (index) {
+            case 48:
+                drawStarfishRender(false, _ctx);
+                break;
+            case 49:
+                drawLeechRender(_ctx);
+                break;
+            default:
+                drawMob(0, index, rarity, false, _ctx, false, false, 0, undefined, 0);
+                break;
+        }
+
+        _ctx.restore();
+
+        cached = img;
+        UIMobCache.set(key, cached);
+    }
+
+    const size = 7;
+    ctx.drawImage(cached, -size / 2, -size / 2, size, size);
+}
+function formatNegativeOrPositive(number, type = 1) {
+    if (type === 1) {
+        return (number < 0 ? "-" : "") + formatLargeNumber(Math.abs(number))
+    } else if (type === 2) {
+        return (number < 0 ? "-" : "+") + formatLargeNumber(Math.abs(number))
+    } else if (type === 3) {
+        return formatLargeNumber(Math.abs(number))
+    }
+}
+function createPetalTooltip(index, rarityIndex) {
+    /** @type {PetalConfig} */
+    const petal = state.petalConfigs[index];
+    const tier = petal.tiers[rarityIndex];
+
+    let width = 350,
+        height = 60 + drawWrappedText(petal.description, -10000, -10000, 15, width - 20) + 30;
+
+    height += 17.5 * (
+        (tier.health > 0) +
+        (tier.damage > 0) +
+        (tier.extraHealth !== 0) +
+        (tier.constantHeal !== 0) +
+        (tier.damageReduction > 0 || tier.damageReduction < 0) +
+        (tier.speedMultiplier !== 1) +
+        (tier.extraSize !== 0) +
+        (tier.extraRadians > 0) +
+        (tier.healing > 0) +
+        (petal.enemySpeedDebuff !== undefined) +
+        (tier.poison !== undefined) +
+        (tier.extraRange > 0) +
+        (tier.spawnable !== undefined) +
+        (tier.extraVision > 0 || tier.extraVision < 0) +
+        ((tier.pentagramAbility !== undefined) * 4) +
+        (tier.lightning !== undefined) +
+        (tier.extraPickupRange > 0) +
+        (tier.healSpit > 0) +
+        ((tier.damageReflection !== undefined)) +
+        (tier.damageReflection?.cap > 0) +
+        (tier.density !== 1) +
+        ((tier.deathDefying !== undefined) * 2) +
+        (tier.absorbsDamage !== undefined) +
+        (tier.shield > 0) +
+        (tier.boost !== undefined) +
+        (tier.healBack > 0 || tier.healBack < 0) +
+        (tier.lightning?.charges > 1) +
+        (petal.extraLighting > 0) +
+        ((petal.extraDamage !== undefined) * 2) +
+        (tier.armor !== 0)
+    );
+
+    const canvas = new OffscreenCanvas(width * 2, height * 2);
+    const ctx = canvas.getContext("2d");
+
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    ctx.scale(2, 2);
+
+    ctx.beginPath();
+    ctx.roundRect(0, 0, width, height, width / 20);
+    ctx.globalAlpha = .334;
+    ctx.fillStyle = "#000000";
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    text(petal.name, 10, 10, 22.5, "#FFFFFF", ctx);
+    text(state.tiers[rarityIndex].name, 10, 35, 15, state.tiers[rarityIndex].color, ctx);
+
+    let timerString = petal.wearable ? "🎩" : (((petal.cooldown / 22.5 * 100) | 0) / 100) + "s ⟳";
+
+    if (tier.count > 1) {
+        timerString = tier.count + "x | " + timerString;
+    }
+
+    if (tier.spawnable?.timer > 0) {
+        timerString += " + " + +tier.spawnable.timer.toFixed(2) + "s ⚡︎";
+    }
+
+    if (tier.boost !== undefined) {
+        timerString += " + " + +tier.boost.delay.toFixed(2) + "s ⚡︎";
+    }
+
+    ctx.textAlign = "right";
+    text(timerString, width - 10, 10, 17.5, "#FFFFFF", ctx);
+    ctx.textAlign = "left";
+
+    let newY = 80 + drawWrappedText(petal.description, 10, 60, 15, width - 20, "#FFFFFF", ctx);
+
+    if (tier.health > 0) {
+        let x = 10 + text("Health: ", 10, newY, 15, colors.common, ctx);
+        x += text(formatLargeNumber(+(tier.health * tier.count).toFixed(2)), x, newY, 15, colors.white, ctx);
+        if (tier.count > 1) {
+            x += text(" (" + formatLargeNumber(+(tier.health).toFixed(2)) + " x " + tier.count + ")", x, newY, 15, colors.white, ctx);
+        }
+        newY += 17.5;
+    }
+
+    if (tier.damage > 0) {
+        let x = 10 + text("Damage: ", 10, newY, 15, mixColors(colors.legendary, "#FFFFFF", .2), ctx);
+        x += text(formatLargeNumber(+(tier.damage * tier.count).toFixed(2)), x, newY, 15, colors.white, ctx);
+        if (tier.count > 1) {
+            x += text(" (" + formatLargeNumber(+(tier.damage).toFixed(2)) + " x " + tier.count + ")", x, newY, 15, colors.white, ctx);
+        }
+        newY += 17.5;
+    }
+
+    if (tier.extraHealth !== 0) {
+        let x = 10 + text("Extra Health: ", 10, newY, 15, mixColors(colors.epic, "#FFFFFF", .2), ctx);
+        x += text(formatNegativeOrPositive(+tier.extraHealth.toFixed(2)), x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.constantHeal !== 0) {
+        let x = 10 + text("Constant Heal: ", 10, newY, 15, mixColors(colors.common, "#FFFFFF", .2), ctx);
+        x += text(formatNegativeOrPositive(+(tier.constantHeal * 22.5).toFixed(2)) + "/s", x, newY, 15, colors.white, ctx);
+        
+        if (petal.healWhenUnder < 1) {
+            x += text(" (", x, newY, 15, colors.white, ctx);
+            x += text("Under " + +(petal.healWhenUnder * 100).toFixed(2) + "% HP", x, newY, 15, colors.rosePink, ctx);
+            text(")", x, newY, 15, colors.white, ctx);
+        }
+
+        newY += 17.5;
+    }
+
+    if (tier.damageReduction !== 0) {
+        if (tier.damageReduction > 0) {
+            let x = 10 + text("Damage Reduction: ", 10, newY, 15, mixColors(colors.ultra, "#FFFFFF", .2), ctx);
+            x += text("-" + formatNegativeOrPositive(+(tier.damageReduction * 100).toFixed(2)) + "%", x, newY, 15, colors.white, ctx);
+        } else {
+            let x = 10 + text("Extra Damage Taken: ", 10, newY, 15, mixColors(colors.ultra, "#FFFFFF", .2), ctx);
+            x += text("+" + formatNegativeOrPositive(+(tier.damageReduction * 100).toFixed(2), 3) + "%", x, newY, 15, colors.white, ctx);
+        }
+        newY += 17.5;
+    }
+
+    if (tier.speedMultiplier !== 1) {
+        let x = 10 + text("Speed: ", 10, newY, 15, mixColors(colors.mythic, "#FFFFFF", .2), ctx);
+        x += text(formatNegativeOrPositive(+((tier.speedMultiplier - 1) * 100).toFixed(2), 2) + "%", x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.extraSize !== 0) {
+        let x = 10 + text("Extra Size: ", 10, newY, 15, mixColors(colors.ancient, "#FFFFFF", .2), ctx);
+        x += text(formatNegativeOrPositive(+tier.extraSize.toFixed(2), 2), x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.extraRadians > 0) {
+        let x = 10 + text("Radians: ", 10, newY, 15, mixColors(colors.super, "#FFFFFF", .2), ctx);
+        x += text(formatNegativeOrPositive((+tier.extraRadians * 22.5).toFixed(2), 2) + " rad/s", x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.healing > 0) {
+        let x = 10 + text("Heal: ", 10, newY, 15, colors.rosePink, ctx);
+        x += text(formatNegativeOrPositive(+tier.healing.toFixed(2), 2), x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (petal.enemySpeedDebuff !== undefined) {
+        let x = 10 + text("Speed Debuff: ", 10, newY, 15, colors.white, ctx);
+        x += text("-" + (+((1 - petal.enemySpeedDebuff.speedMultiplier) * 100).toFixed(2)) + "% for " + (petal.enemySpeedDebuff.duration / 22.5).toFixed(2) + "s", x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.poison !== undefined) {
+        let x = 10 + text("Poison: ", 10, newY, 15, colors.irisPurple, ctx);
+        x += text(formatLargeNumber(+tier.poison.damage.toFixed(2)) + "/s for " + tier.poison.duration.toFixed(2) + "s", x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.extraRange > 0 || tier.extraRange < 0) {
+        let x = 10 + text("Range: ", 10, newY, 15, colors.orange, ctx);
+        x += text(formatNegativeOrPositive(+tier.extraRange.toFixed(2), 2), x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.spawnable !== undefined) {
+        let x = 10 + text("Spawns: ", 10, newY, 15, colors.bubbleGrey, ctx);
+        x += text(state.mobConfigs[tier.spawnable.index].name, x, newY, 15, colors.peaGreen, ctx);
+        x += text(" (", x, newY, 15, colors.bubbleGrey, ctx);
+        x += text(state.tiers[tier.spawnable.rarity].name, x, newY, 15, state.tiers[tier.spawnable.rarity].color, ctx);
+        text(")", x, newY, 15, colors.bubbleGrey, ctx);
+
+        newY += 17.5;
+    }
+
+    if (tier.extraVision > 0 || tier.extraVision < 0) {
+        let x = 10 + text("Vision: ", 10, newY, 15, colors.orange, ctx);
+        x += text(formatNegativeOrPositive(+tier.extraVision.toFixed(2), 2), x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.pentagramAbility !== undefined) {
+        text("Spell: " + +(tier.pentagramAbility.cooldown / 22.5).toFixed(2) + "s ⚡︎, " + formatLargeNumber(+tier.pentagramAbility.range.toFixed(2)) + " range", 10, newY, 15, colors.evilLadybugRed, ctx);
+        newY += 17.5;
+
+        text("- Damage: " + formatLargeNumber(+tier.pentagramAbility.damage.toFixed(2)), 20, newY, 15, mixColors(colors.legendary, "#FFFFFF", .2), ctx);
+        newY += 17.5;
+
+        text("- Poison Inflicted: " + formatLargeNumber(+tier.pentagramAbility.poison.damage.toFixed(2)) + "/s for " + +tier.pentagramAbility.poison.duration.toFixed(2) + "s", 20, newY, 15, colors.irisPurple, ctx);
+        newY += 17.5;
+
+        text("- Speed Debuff: " + +((1 - tier.pentagramAbility.speedDebuff.multiplier) * 100).toFixed(2) + "% for " + +tier.pentagramAbility.speedDebuff.duration.toFixed(2) + "s", 20, newY, 15, colors.jellyfish, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.lightning !== undefined) {
+        let x = 10 + text("Lightning: ", 10, newY, 15, colors.lightningTeal, ctx);
+        x += text(formatLargeNumber(+tier.lightning.damage.toFixed(2)), x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.lightning?.charges > 1) {
+        let x = 10 + text("Charges: ", 10, newY, 15, mixColors(colors.lightningTeal, "#FFFFFF", .4), ctx);
+        x += text(formatLargeNumber(+tier.lightning.charges), x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.extraPickupRange > 0) {
+        let x = 10 + text("Pickup Range: ", 10, newY, 15, mixColors(colors.rare, "#FFFFFF", .35), ctx);
+        x += text(formatNegativeOrPositive(+tier.extraPickupRange.toFixed(2), 2), x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.healSpit > 0) {
+        let x = 10 + text("Team Heal: ", 10, newY, 15, colors.rosePink, ctx);
+        x += text(formatNegativeOrPositive(+tier.healSpit.toFixed(2), 2) + "/nearby teammate", x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.damageReflection !== undefined) {
+        let x = 10 + text("Damage Reflection: ", 10, newY, 15, mixColors(colors.legendary, "#FFFFFF", .2), ctx);
+        x += text(formatLargeNumber(+(tier.damageReflection.reflection * 100).toFixed(2)) + "%", x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+
+        if (tier.damageReflection.cap > 0) {
+            let y = 10 + text("Reflection Cap: ", 10, newY, 15, mixColors(colors.legendary, "#FFFFFF", .35), ctx);
+            y += text(+ +(tier.damageReflection.cap * 100).toFixed(2) + "%", y, newY, 15, colors.white, ctx);
+            newY += 17.5;
+        }
+    }
+
+    if (tier.density !== 1) {
+        let x = 10 + text("Density: ", 10, newY, 15, mixColors(colors.epic, "#FFFFFF", .2), ctx);
+        x += text(formatLargeNumber(+tier.density.toFixed(2)), x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.deathDefying !== undefined) {
+        let x = 10 + text("Resurrection Health: ", 10, newY, 15, mixColors(colors.mythic, "#FFFFFF", .2), ctx);
+        x += text(+(tier.deathDefying.health * 100).toFixed(2) + "%", x, newY, 15, colors.white, ctx);
+        let y = 10 + text("Resurrection Immunity: ", 10, newY + 17.5, 15, mixColors(colors.super, "#FFFFFF", .2), ctx);
+        y += text(+(tier.deathDefying.duration).toFixed(2) + "s", y, newY + 17.5, 15, colors.white, ctx);
+        newY += 17.5 * 2;
+    }
+
+    if (tier.absorbsDamage !== undefined) {
+        let x = 10 + text("Absorption: ", 10, newY, 15, mixColors(colors.peaGreen, "#FFFFFF", .2), ctx);
+        x += text(formatLargeNumber(+tier.absorbsDamage.maxDamage.toFixed(2)) + " dmg over " + +tier.absorbsDamage.period.toFixed(2) + "s", x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.shield > 0) {
+        let x = 10 + text("Shield: ", 10, newY, 15, mixColors(colors.mythic, "#FFFFFF", .2), ctx);
+        x += text(formatLargeNumber(+tier.shield.toFixed(2)), x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.boost !== undefined) {
+        let x = 10 + text("Boost: ", 10, newY, 15, mixColors(colors.rare, "#FFFFFF", .2), ctx);
+        x += text(formatLargeNumber(+tier.boost.length.toFixed(2)), x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.healBack > 0 || tier.healBack < 0) {
+        if (tier.healBack > 0) {
+            let x = 10 + text("Heal Back: ", 10, newY, 15, colors.inventory, ctx);
+            x += text(formatLargeNumber(+(tier.damage * tier.healBack).toFixed(2)), x, newY, 15, colors.white, ctx);
+        } else {
+            let x = 10 + text("Self Damage: ", 10, newY, 15, "#A44343", ctx);
+            x += text(formatNegativeOrPositive(+(tier.damage * tier.healBack).toFixed(2), 3), x, newY, 15, colors.white, ctx);
+        }
+        newY += 17.5;
+    }
+
+    if (petal.extraLighting > 0) {
+        let x = 10 + text("Lighting: ", 10, newY, 15, colors.beeYellow, ctx);
+        x += text(formatNegativeOrPositive(+petal.extraLighting.toFixed(2), 2), x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (petal.extraDamage !== undefined) {
+        text("If target is between " + petal.extraDamage.minHp.toFixed(2) * 100 + "% and " + petal.extraDamage.maxHp.toFixed(2) * 100 + "%:", 10, newY, 15, colors.legendary, ctx);
+        text("Extra Damage: " + formatLargeNumber(tier.damage.toFixed(2) * petal.extraDamage.multiplier.toFixed(2)), 10, newY + 17.5, 15, colors.legendary, ctx);
+        newY += 17.5 * 2;
+    }
+
+    if (tier.armor !== 0) {
+        let x = 10 + text("Armor: ", 10, newY, 15, mixColors(colors.lighterBlack, "#FFFFFF", .2), ctx);
+        x += text(formatNegativeOrPositive(+tier.armor.toFixed(2)), x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    return canvas;
+}
+
+function createMobTooltip(index, rarityIndex) {
+    /** @type {MobConfig} */
+    const mob = state.mobConfigs[index];
+    const tier = mob?.tiers[rarityIndex];
+
+    let width = 350,
+        height = 60 + 20;
+
+    if (!tier) {
+        height -= 15
+
+        const canvas = new OffscreenCanvas(width * 2, height * 2);
+        const ctx = canvas.getContext("2d");
+
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+    
+        ctx.scale(2, 2);
+    
+        ctx.beginPath();
+        ctx.roundRect(0, 0, width, height, width / 20);
+        ctx.globalAlpha = .334;
+        ctx.fillStyle = "#000000";
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        text("Bot", 10, 10, 22.5, "#FFFFFF", ctx);
+        text(state.tiers[rarityIndex].name, 10, 35, 15, state.tiers[rarityIndex].color, ctx);
+
+        return canvas;
+    }
+
+    let projectileConfig = state.petalConfigs[tier.projectile?.index];
+    let projectileConfigTier = projectileConfig?.tiers[rarityIndex];
+
+    height += 17.5 * (
+        (tier.health > 0) +
+        (tier.damage > 0) +
+        (mob.healing > 0) +
+        (mob.drops.length) +
+        (mob.drops.length > 0) +
+        (tier.damageReduction > 0 || tier.damageReduction < 0) +
+        (tier.poison !== null) +
+        (tier.lightning > 0) +
+        (mob.damageReflection.reflection > 0) +
+        (mob.damageReflection?.cap > 0) +
+        (tier.armor) +
+        ((tier.projectile !== null) * 3) +
+        (tier.projectile?.damage > 0) +
+        (Number.isFinite(tier.projectile?.health)) +
+        (projectileConfig?.enemySpeedDebuff !== undefined) +
+        (projectileConfigTier?.poison !== undefined)
+    );
+
+    const canvas = new OffscreenCanvas(width * 2, height * 2);
+    const ctx = canvas.getContext("2d");
+
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    ctx.scale(2, 2);
+
+    ctx.beginPath();
+    ctx.roundRect(0, 0, width, height, width / 20);
+    ctx.globalAlpha = .334;
+    ctx.fillStyle = "#000000";
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    text(mob.name, 10, 10, 22.5, "#FFFFFF", ctx);
+    text(state.tiers[rarityIndex].name, 10, 35, 15, state.tiers[rarityIndex].color, ctx);
+
+    let newY = 70;
+
+    if (tier.health > 0) {
+        let x = 10 + text("Health: ", 10, newY, 15, colors.common, ctx);
+        x += text(formatLargeNumber(+tier.health.toFixed(2)), x, newY, 15, colors.white, ctx);
+        if (tier.count > 1) {
+            x += text(" (" + formatLargeNumber(+(tier.health).toFixed(2)) + " x " + tier.count + ")", x, newY, 15, colors.white, ctx);
+        }
+        newY += 17.5;
+    }
+
+    if (tier.damage > 0) {
+        let x = 10 + text("Damage: ", 10, newY, 15, mixColors(colors.legendary, "#FFFFFF", .2), ctx);
+        x += text(formatLargeNumber(+tier.damage.toFixed(2)), x, newY, 15, colors.white, ctx);
+        if (tier.count > 1) {
+            x += text(" (" + formatLargeNumber(+(tier.damage).toFixed(2)) + " x " + tier.count + ")", x, newY, 15, colors.white, ctx);
+        }
+        newY += 17.5;
+    }
+
+    if (mob.healing > 0) {
+        let x = 10 + text("Constant Heal: ", 10, newY, 15, mixColors(colors.common, "#FFFFFF", .2), ctx);
+        x += text(formatNegativeOrPositive(+((tier.health * mob.healing) * 22.5).toFixed(2)) + "/s", x, newY, 15, colors.white, ctx);
+
+        newY += 17.5;
+    }
+
+    if (tier.damageReduction !== 0) {
+        if (tier.damageReduction > 0) {
+            let x = 10 + text("Damage Reduction: ", 10, newY, 15, mixColors(colors.ultra, "#FFFFFF", .2), ctx);
+            x += text("-" + formatNegativeOrPositive(+(tier.damageReduction * 100).toFixed(2)) + "%", x, newY, 15, colors.white, ctx);
+        } else {
+            let x = 10 + text("Extra Damage Taken: ", 10, newY, 15, mixColors(colors.ultra, "#FFFFFF", .2), ctx);
+            x += text("+" + formatNegativeOrPositive(+(tier.damageReduction * 100).toFixed(2), 3) + "%", x, newY, 15, colors.white, ctx);
+        }
+        newY += 17.5;
+    }
+
+    if (tier.poison) {
+        let x = 10 + text("Poison: ", 10, newY, 15, colors.irisPurple, ctx);
+        x += text(formatLargeNumber(+tier.poison.damage.toFixed(2)) + "/s for " + tier.poison.duration.toFixed(2) + "s", x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.lightning) {
+        let x = 10 + text("Lightning: ", 10, newY, 15, colors.lightningTeal, ctx);
+        x += text(formatLargeNumber(+tier.lightning.toFixed(2)), x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (mob.damageReflection.reflection > 0) {
+        let x = 10 + text("Damage Reflection: ", 10, newY, 15, mixColors(colors.legendary, "#FFFFFF", .2), ctx);
+        x += text(formatLargeNumber(+(mob.damageReflection.reflection * 100).toFixed(2)) + "%", x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+
+        if (mob.damageReflection.cap > 0) {
+            let y = 10 + text("Reflection Cap: ", 10, newY, 15, mixColors(colors.legendary, "#FFFFFF", .35), ctx);
+            y += text(+ +(mob.damageReflection.cap * 100).toFixed(2) + "%", y, newY, 15, colors.white, ctx);
+            newY += 17.5;
+        }
+    }
+
+    if (tier.armor) {
+        let x = 10 + text("Armor: ", 10, newY, 15, mixColors(colors.lighterBlack, "#FFFFFF", .2), ctx);
+        x += text(formatNegativeOrPositive(+tier.armor.toFixed(2)), x, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (tier.projectile !== null) {
+        let projectileName = state.petalConfigs[tier.projectile.index].name;
+        if (projectileName.includes(".")) {
+            projectileName = projectileName.split(".")[0];
+        }
+
+        text("Projectile: ", 10, newY, 15, mixColors(colors.lighterBlack, "#FFFFFF", .5), ctx);
+        newY += 17.5;
+
+        if (Number.isFinite(tier.projectile.health)) {
+            let x = 20 + text("- Health: ", 20, newY, 15, mixColors(colors.common, "#FFFFFF", .1), ctx);
+            x += text(formatLargeNumber(+tier.projectile.health.toFixed(2)), x, newY, 15, colors.white, ctx);
+            newY += 17.5;
+        }
+
+        if (tier.projectile.damage > 0) {
+            let x = 20 + text("- Damage: ", 20, newY, 15, mixColors(colors.legendary, "#FFFFFF", .2), ctx);
+            x += text(formatLargeNumber(+tier.projectile.damage.toFixed(2)), x, newY, 15, colors.white, ctx);
+            newY += 17.5;
+        }
+
+        if (projectileConfigTier.poison !== undefined) {
+            let x = 20 + text("- Poison: ", 20, newY, 15, mixColors(colors.irisPurple, "#FFFFFF", .1), ctx);
+            x += text(formatLargeNumber(+projectileConfigTier.poison.damage.toFixed(2)) + "/s for " + projectileConfigTier.poison.duration.toFixed(2) + "s", x, newY, 15, colors.white, ctx);
+            newY += 17.5;
+        }
+
+        if (projectileConfig.enemySpeedDebuff !== undefined) {
+            let x = 20 + text("- Speed Debuff: ", 20, newY, 15, colors.white, ctx);
+            x += text("-" + (+((1 - projectileConfig.enemySpeedDebuff.speedMultiplier) * 100).toFixed(2)) + "% for " + (projectileConfig.enemySpeedDebuff.duration / 22.5).toFixed(2) + "s", x, newY, 15, colors.white, ctx);
+            newY += 17.5;
+        }
+        
+        let y = 20 + text("- Type: ", 20, newY, 15, mixColors(colors.playerYellow, "#FFFFFF", .1), ctx);
+        y += text(projectileName, y, newY, 15, colors.white, ctx);
+        newY += 17.5;
+
+        let z = 20 + text("- Range: ", 20, newY, 15, mixColors(colors.rare, "#FFFFFF", .1), ctx);
+        z += text(+(tier.projectile.range / 22.5).toFixed(2) + "s", z, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    }
+
+    if (mob.drops.length > 0) {
+        text("Drops: ", 10, newY, 15, colors.white, ctx);
+        newY += 17.5;
+    
+        mob.drops.forEach(drop => {
+            let x = 20 + text("- " + state.petalConfigs[drop.index].name + ": ", 20, newY, 15, colors.white, ctx);
+            x += text(+(drop.chance * 100) + "%", x, newY, 15, colors.white, ctx);
+            if (drop.minRarity > 0) {
+                x += text(", Minimum rarity: " + state.tiers[drop.minRarity].name, x, newY, 15, colors.white, ctx);
+            }
+            newY += 17.5;
+        });
+    }
+
+    return canvas;
+}
+
+const cache = [];
+
+export function petalTooltip(index, rarity) {
+    if (!cache[index]) {
+        cache[index] = [];
+    }
+
+    if (!cache[index][rarity]) {
+        cache[index][rarity] = createPetalTooltip(index, rarity);
+    }
+
+    return cache[index][rarity];
+}
+
+const cache2 = [];
+
+export function mobTooltip(index, rarity) {
+    if (!cache2[index]) {
+        cache2[index] = [];
+    }
+
+    if (!cache2[index][rarity]) {
+        cache2[index][rarity] = createMobTooltip(index, rarity);
+    }
+
+    return cache2[index][rarity];
+}
+
+export const pentagram = (() => {
+    const canv = new OffscreenCanvas(256, 256);
+    const ctx = canv.getContext("2d");
+
+    ctx.translate(128, 128);
+    ctx.scale(124, 124);
+
+    const p = new Path2D("M0 1C.551 1 1 .551 1 0c0-.551-.449-1-1-1-.551 0-1 .449-1 1C-1 .551-.551 1 0 1zM0 .867c-.159 0-.308-.043-.436-.118l.431-.328L.436.749C.308.824.159.867 0 .867zM.318.469l-.195-.145L.245.235.318.469zM.283-.171l.261-.003-.215.156L.283-.171zM.034.197l-.04.029-.119-.085-.074-.055.079-.252.238-.002.077.244L.034.197zM-.135.325l-.183.139.07-.222.031.022L-.135.325zM-.333-.009l-.216-.154.263-.003L-.333-.009zM.867 0c0 .272-.126.515-.323.674l-.168-.535.467-.339C.859-.136.867-.069.867 0zM.801-.331l-.564.005-.161-.538C.404-.835.68-.623.801-.331zM-.001-.547l.07.223-.14.001L-.001-.547zM-.077-.864l-.162.543-.568.006C-.69-.615-.411-.834-.077-.864zM-.381.147l-.165.526c-.196-.159-.322-.402-.322-.673 0-.064.007-.126.02-.186L-.381.147z");
+    ctx.strokeStyle = "rgba(255, 128, 100, 1)";
+    ctx.lineWidth = .05;
+    ctx.stroke(p);
+
+    return (ctx = _ctx, k = performance.now() % 5000 / 5000) => {
+        ctx.drawImage(canv, -1, -1, 2, 2);
+
+        ctx.beginPath();
+        for (let i = 0; i < 8; i++) {
+            const a = i / 4 * Math.PI;
+            const r = k * (Math.sin(i * 5 + k * i + performance.now() / 1000) * .05 + 1);
+
+            // Curve between the octagon
+            ctx.quadraticCurveTo(Math.cos(a + Math.PI / 8) * r, Math.sin(a + Math.PI / 8) * r, Math.cos(a + Math.PI / 4) * r, Math.sin(a + Math.PI / 4) * r);
+        }
+
+        ctx.closePath();
+
+        ctx.strokeStyle = "rgba(255, 128, 100, 1)";
+        ctx.lineWidth = .075;
+        ctx.stroke();
+    }
+})();
