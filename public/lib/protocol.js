@@ -558,12 +558,19 @@ export class PetalConfig {
 
         return this;
     }
-    setIcon(size, count, name) {
-        this.icon = {
-            size,
-            count,
-            name
+
+    setIcon(size, count, name, rotation) {
+        for (let i = 0; i < this.tiers.length; i++) {
+            let c2 = count instanceof Array ? (count[i] ?? count[count.length - 1]) : count;
+
+            this.tiers[i].icon = {
+                size: size,
+                count: c2,
+                name: name,
+                rotation: rotation * Math.PI / 180
+            }
         }
+
         return this;
     }
 
@@ -608,8 +615,8 @@ export class PetalConfig {
             petal: petalID,
             offset: offset
         }
-        return this;
     }
+    
 }
 
 export class MobDrop {
