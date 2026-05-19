@@ -2597,7 +2597,21 @@ export class Mob extends Entity {
         if (!this.givesXP) {
             return;
         }
-
+        const tables = [
+            0: {minRarity: -2, maxRarity: 0, median: -1},
+            1: {minRarity: -1, maxRarity: 1, median: 0},
+            2: {minRarity: 0, maxRarity: 2, median: 1},
+            3: {minRarity: 1, maxRarity: 3, median: 2},
+            4: {minRarity: 2, maxRarity: 4, median: 3},
+            5: {minRarity: 3, maxRarity: 5, median: 4},
+            6: {minRarity: 4, maxRarity: 6, median: 5},
+            7: {minRarity: 5, maxRarity: 7, median: 6},
+            8: {minRarity: 6, maxRarity: 8, median: 7},
+            9: {minRarity: 7, maxRarity: 9, median: 8},
+            10: {minRarity: 8, maxRarity: 10, median: 9},
+            11: {minRarity: 9, maxRarity: 11, median: 10}
+        ]
+        const table = tables[this.rarity];
         const topDamagers = this.getTopDamagers(3, ENTITY_TYPES.PLAYER);
         let killText = '';
         topDamagers.forEach(damager => {
@@ -2609,12 +2623,15 @@ export class Mob extends Entity {
 
                     const output = [];
                     for (const drop of mobConfigs[this.index].drops) {
-                        if (Math.random() > drop.chance) {
-                            continue;
+                        const weight = []
+                        let total = 0;
+                        for (let i = 0; i < 1 + (table.maxRarity - table.minRarity); i++) weight.push(Math.pow(drop.chance, i + table.median)), total += Math.pow(drop.chance, i + table.median);
+                        let random = Math.random() * total;
+                        for (let i = 0; i < 1 + (table.maxRarity - table.minRarity); i++) {
+                            random -= weight[i];
+                            if (random < 0) break;
                         }
-
-                        const rarity = getDropRarity(this.rarity, client.highestRarity + 5);
-                        if (rarity < drop.minRarity) {
+                        if (rarity < drop.minRarity || rarity < 0) {
                             continue;
                         }
 
