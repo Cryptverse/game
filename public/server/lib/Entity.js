@@ -2612,18 +2612,18 @@ export class Mob extends Entity {
             {minRarity: 9, maxRarity: 11, median: 10}
         ]
         const multis = [
-            {1,1,1},
-            {1,1,1},
-            {1,1,1},
-            {1,1,1},
-            {1,1,1},
-            {1,1,1},
-            {1,1,1},
-            {1,1,1},
-            {1,1,1},
-            {1,1,1},
-            {1,1,1},
-            {1,1,1}
+            [1,1,1],
+            [1,1,1],
+            [1,1,1],
+            [1,1,1],
+            [1,1,1],
+            [1,1,1],
+            [1,1,1],
+            [1,1,1],
+            [1,1,1],
+            [1,1,1],
+            [1,1,1],
+            [1,1,1]
         ]
         const table = tables[this.rarity];
         const multi = multis[this.rarity];
