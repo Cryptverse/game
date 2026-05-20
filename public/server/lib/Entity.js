@@ -1453,6 +1453,8 @@ export class Petal extends Entity {
         if (this.config?.shooter) {
             if (this.shotTick <= 0) {
                 if (this.parent.attack){
+                    this.x -= 15 * Math.cos(this.facing);
+                    this.y -= 15 * Math.sin(this.facing);
                     const shooter = this.config.shooter
                     this.shotTick = shooter.fireinterval;
                     const config = petalConfigs[shooter.petal];

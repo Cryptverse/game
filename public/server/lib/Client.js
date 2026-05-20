@@ -869,6 +869,7 @@ export default class Client {
 
                 // ADDITION
                 this.inventory[tiers[0].name][petalIDOf("Pistol")] = 10;
+                this.inventory[tiers[0].name][petalIDOf("Assault Rifle")] = 1;
                 this.inventory[tiers[0].name][petalIDOf("Sand")] = 50;
                 this.inventory[tiers[0].name][petalIDOf("Light")] = 50;
                 this.inventory[tiers[0].name][petalIDOf("Stinger")] = 50;
