@@ -789,7 +789,8 @@ export default class Client {
                     this.slots.push({ id: 0, rarity: 0 });
                     this.secondarySlots.push(null);
                 }
-            } else if (slots < this.slots.length)
+            // } else if (slots < this.slots.length) // REMOVED
+            } else if (false) // ADDITION
                 for (let i = this.slots.length - 1; i >= slots; i--)
                     for (const { id, rarity } of [this.slots.pop(), this.secondarySlots.pop()].filter(({id, rarity}) => id !== null))
                         if (this.inventory[tiers[rarity].name][id]) this.inventory[tiers[rarity].name][id]++;
@@ -870,6 +871,7 @@ export default class Client {
                 // ADDITION
                 this.inventory[tiers[0].name][petalIDOf("Pistol")] = 10;
                 this.inventory[tiers[0].name][petalIDOf("Assault Rifle")] = 1;
+                this.inventory[tiers[0].name][petalIDOf("SMG")] = 1;
                 this.inventory[tiers[0].name][petalIDOf("Sand")] = 50;
                 this.inventory[tiers[0].name][petalIDOf("Light")] = 50;
                 this.inventory[tiers[0].name][petalIDOf("Stinger")] = 50;

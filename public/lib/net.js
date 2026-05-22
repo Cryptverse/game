@@ -2198,6 +2198,7 @@ export async function beginState(
     }
 
     location.hash = lobbyID;
+    serverURL = serverURL.replace("ws:", "wss:"); // ADDITON
     state.socket = new ClientSocket(
       `${serverURL}/ws/client?partyURL=${lobbyID}&clientKey=${localStorage.getItem("token") ?? ""}&uuid=${UUID}&analytics=${analyticalData}`,
       username,

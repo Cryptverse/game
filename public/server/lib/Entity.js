@@ -1461,6 +1461,7 @@ export class Petal extends Entity {
                     for (let i = 0; i < shooter.count; i++) {
                         const petal = new Petal(this.parent);
                         petal.define(config, this.rarity);
+                        const dist = Math.random() * 40;
                         petal.x = this.x;
                         petal.y = this.y;
                         petal.damage = this.damage;
@@ -1469,6 +1470,8 @@ export class Petal extends Entity {
                         petal.moveAngle = petal.facing;
                         petal.speed = 1;
                         petal.moveStrength = config.projectile?.acceleration || 0;
+                        petal.x += Math.cos(petal.facing) * dist;
+                        petal.y += Math.sin(petal.facing) * dist;
                         if (config.projectile?.friction == null) {
                             petal.friction = (shooter.speed - petal.moveStrength) / shooter.speed;
                             petal.velocity.x = Math.cos(petal.facing);
@@ -1486,6 +1489,7 @@ export class Petal extends Entity {
                             petal.seekTurning = config.projectile.turn / 22.5;
                         }
                     }
+                    this.facing -= 0.15;
                 }
             }
             else {
@@ -2767,7 +2771,7 @@ export class Mob extends Entity {
             }
             for (let j = 0; j < linked.length; j++) {
                 linked[j].linkedDrops = linked;
-                linked[j].linkCount = 1;
+                linked[j].linkCount = 2;
             }
         }
         const topDamagers = this.getTopDamagers(3, ENTITY_TYPES.PLAYER);
