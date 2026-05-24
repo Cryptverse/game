@@ -3428,19 +3428,19 @@ function drawSandstorm(id, color, attack = false, hit = false, ctx = _ctx, date)
     const myCol = mixColors(color, "#FF0000", hit * 0.5);
 
     polygon(ctx, 6, 1, baseRot);
-    ctx.fillStyle = ctx.strokeStyle = mixColors(myCol, "#000000", 0.1);
+    ctx.fillStyle = ctx.strokeStyle = myCol;
     ctx.lineWidth = 0.3;
     ctx.fill();
     ctx.stroke();
 
     polygon(ctx, 6, 0.667, -baseRot * 0.8 + Math.PI / 2);
-    ctx.fillStyle = ctx.strokeStyle = mixColors(myCol, "#000000", 0.2);
+    ctx.fillStyle = ctx.strokeStyle = mixColors(myCol, "#000000", 0.1);
     ctx.lineWidth = 0.3;
     ctx.fill();
     ctx.stroke();
 
     polygon(ctx, 6, 0.334, baseRot * 0.6);
-    ctx.fillStyle = ctx.strokeStyle = mixColors(myCol, "#000000", 0.3);
+    ctx.fillStyle = ctx.strokeStyle = mixColors(myCol, "#000000", 0.2);
     ctx.lineWidth = 0.3;
     ctx.fill();
     ctx.stroke();
