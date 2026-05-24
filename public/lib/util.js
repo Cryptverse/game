@@ -91,8 +91,18 @@ export const colors = {
     bookSpine: "#c28043",
     shrubGreen: "#0b7240",
     crabBodyOrange: "#dc704b",
-    crabLimbBrown: "#4d2621"
+    crabLimbBrown: "#4d2621",
+    defaultGray: "#718083",
+    gardenGreen: "#1EA660",
+    desertYellow: "#ECDCB8",
+    oceanBlue: "#6D96BE",
+    antHellBrown: "#8E603F",
+    hellRed: "#973332",
+    sewersGreen: "#676733",
+    darkForestGreen: "#2C5037",
+    halloweenOrange: "#CF5704"
 };
+
 export function formatLargeNumber(number, type = 0) {
     let returnedNumber = number;
     if (type === 1) {

@@ -3428,20 +3428,20 @@ function drawSandstorm(id, color, attack = false, hit = false, ctx = _ctx, date)
     const myCol = mixColors(color, "#FF0000", hit * 0.5);
 
     polygon(ctx, 6, 1, baseRot);
-    ctx.fillStyle = ctx.strokeStyle = myCol;
-    ctx.lineWidth = 0.25;
+    ctx.fillStyle = ctx.strokeStyle = mixColors(myCol, "#000000", 0.1);
+    ctx.lineWidth = 0.3;
     ctx.fill();
     ctx.stroke();
 
     polygon(ctx, 6, 0.667, -baseRot * 0.8 + Math.PI / 2);
-    ctx.fillStyle = ctx.strokeStyle = mixColors(myCol, "#000000", 0.15);
-    ctx.lineWidth = 0.25;
+    ctx.fillStyle = ctx.strokeStyle = mixColors(myCol, "#000000", 0.2);
+    ctx.lineWidth = 0.3;
     ctx.fill();
     ctx.stroke();
 
     polygon(ctx, 6, 0.334, baseRot * 0.6);
     ctx.fillStyle = ctx.strokeStyle = mixColors(myCol, "#000000", 0.3);
-    ctx.lineWidth = 0.25;
+    ctx.lineWidth = 0.3;
     ctx.fill();
     ctx.stroke();
 }
@@ -5137,7 +5137,7 @@ function mobRender(ctx, id, index, rarity, hit, attack, friend, rot, extra, date
             drawPupa(hit, friend ? colors.playerYellow : colors.peaGreen, ctx);
             break;
         case 10:
-            drawSandstorm(id, friend ? colors.playerYellow : colors.sand, attack, hit, ctx, date);
+            drawSandstorm(id, friend ? colors.playerYellow : mixColors(colors.desertYellow, "#000000", 0.1), attack, hit, ctx, date);
             break;
         case 11:
             drawScorpion(id, friend ? colors.playerYellow : colors.scorpionBrown, hit, ctx, date);
