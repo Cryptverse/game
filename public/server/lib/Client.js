@@ -627,6 +627,7 @@ export class Camera {
             writer.setUint8(drop.index);
             writer.setUint8(drop.rarity);
             writer.setUint16(drop.duration);
+            writer.setUint32(drop.count);
         });
 
         writer.setUint32(0);
@@ -827,20 +828,28 @@ export default class Client {
 
     /** @param {Drop} drop */
     pickupDrop(drop) {
-        for (let i = 0; i < this.secondarySlots.length; i++) {
+        let dropsLeft = drop.count;
+
+        for (let i = 0; i < this.secondarySlots.length && dropsLeft > 0; i++) {
             if (!this.secondarySlots[i]) {
                 this.secondarySlots[i] = {
                     id: drop.index,
                     rarity: drop.rarity
                 };
-                return true;
+                dropsLeft--;
             }
         }
-        const rarity = tiers[drop.rarity].name;
-        if (!this.inventory[rarity][drop.index]) {
-            this.inventory[rarity][drop.index] = 0;
+
+        if (dropsLeft > 0) {
+            const rarity = tiers[drop.rarity].name;
+
+            if (!this.inventory[rarity][drop.index]) {
+                this.inventory[rarity][drop.index] = 0;
+            }
+
+            this.inventory[rarity][drop.index] += dropsLeft;
         }
-        this.inventory[rarity][drop.index] += 1;
+
         return true;
     }
 
@@ -889,7 +898,7 @@ export default class Client {
 
                     console.log(`Client ${this.id} reconnected as ${this.username}`);
                 }
-                state.playerCount++;
+                state.playerCount++
                 break;
             case SERVER_BOUND.SPAWN:
                 if (!this.verified) {
@@ -1394,8 +1403,8 @@ export default class Client {
         }
 
         state.alivePlayers = state.alivePlayers.filter(m => m.id !== this.id);
-        state.playerCount = Math.max(0, state.playerCount - 1);
         state.clients.delete(this.id);
+        state.playerCount--
     }
 
     terminate() {

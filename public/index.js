@@ -1,7 +1,7 @@
 import { canvas, ctx, drawBackground, drawBackgroundOverlay, drawBar, drawFace, drawWrappedText, gameScale, mixColors, setStyle, text, uiScale } from "./lib/canvas.js";
 import * as net from "./lib/net.js";
 import { mouse, keyMap } from "./lib/net.js";
-import { colors, isHalloween, lerp, options, SERVER_URL, shakeElement, formatLargeNumber } from "./lib/util.js";
+import { colors, chatGradient, isHalloween, lerp, options, SERVER_URL, shakeElement, formatLargeNumber } from "./lib/util.js";
 import { BIOME_BACKGROUNDS, BIOME_TYPES, DEV_CHEAT_IDS, SERVER_BOUND, terrains, WEARABLES } from "./lib/protocol.js";
 import { drawMob, drawUIMob, drawPetal, getPetalIcon, drawUIPetal, petalTooltip, mobTooltip, drawThirdEye, drawAntennae, pentagram, drawAmulet, drawPetalIconWithRatio, drawArmor } from "./lib/renders.js";
 import { beginDragDrop, beginInventoryDragDrop, DRAG_TYPE_DESTROY, DRAG_TYPE_MAINDOCKER, DRAG_TYPE_SECONDARYDOCKER, dragConfig, inventoryDragConfig, updateAndDrawDragDrop, updateAndDrawInventoryDragDrop } from "./lib/dragAndDrop.js";
@@ -1611,6 +1611,36 @@ function wavesBorderStyle(rarity) {
     return mixColors(base, "#000000", 0.2);
 }
 
+function convert(g) {
+    const start = g.indexOf("(");
+    const end = g.lastIndexOf(")");
+
+    if (start === -1 || end === -1) return null;
+
+    const args = g
+        .slice(start + 1, end)
+        .split(",")
+        .map(v => v.trim());
+
+    return {
+        speed: parseFloat(args[0]),
+        type: parseInt(args[1]),
+        c1: args[2] || "#000000",
+        c2: args[3] || "#ffffff"
+    };
+}
+
+function chatColor(color) {
+    if (typeof color === "string" && color.startsWith("gradient")) {
+        const c = convert(color);
+        if (!c) return "#ffffff";
+
+        return chatGradient(c.speed, c.type, c.c1, c.c2);
+    }
+
+    return color;
+}
+
 function draw() {
     net.state.petalHover = null;
     net.state.mobHover = null;
@@ -1876,16 +1906,16 @@ function draw() {
         ctx.fillStyle = colors.black;
         ctx.beginPath();
         ctx.roundRect(-0.55 - 0.025 * outlineTimer, -0.55 - 0.025 * outlineTimer, 1.1 + 0.05 * outlineTimer, 1.1 + 0.05 * outlineTimer, 0.1);
-        ctx.globalAlpha *= 0.125;
+        ctx.globalAlpha = 0.125;
         ctx.fill();
         ctx.closePath();
 
-        ctx.globalAlpha *= 8;
+        ctx.globalAlpha = 1;
 
         ctx.drawImage(getPetalIcon(entity.index, entity.rarity), -0.5, -0.5, 1, 1);
 
-        if ((entity.amount ?? 1) > 1) {
-            const text = formatAmount(entity.amount);
+        if (entity.count > 1) {
+            const text = formatAmount(entity.count);
 
             ctx.font = "bold 0.35px Ubuntu";
             ctx.fillStyle = "#ffffff";
@@ -1961,6 +1991,17 @@ function draw() {
 
             ctx.textAlign = "right";
             text(net.state.tiers[entity.rarity].name, drawX + barSize + barthicc * 0.5, drawY + barSize + 18 * scale + barthicc * 0.5, 8.5 * scale, net.state.tiers[entity.rarity].color);
+        }
+
+        if (keyMap.has("h")) {
+            ctx.globalAlpha = 0.3;
+            ctx.beginPath();
+            ctx.arc(drawX, drawY, entity.size * scale * 1.4, 0, Math.PI * 2);
+            ctx.fillStyle = net.state.tiers[entity.rarity].color;
+            ctx.fill();
+            ctx.closePath();
+            ctx.globalAlpha = 1;
+            text(net.state.tiers[entity.rarity].name, drawX, drawY, entity.size * scale * 1.15, net.state.tiers[entity.rarity].color);
         }
     });
 
@@ -2654,7 +2695,6 @@ function draw() {
             }
 
             const radius = biggestSize * (doTerrain ? 0.0225 : 0.025);
-            const blueDot = "#2F80FF";
 
             const selfX = (net.state.camera.x / net.state.room.width) * mapWidth + x + mapWidth / 2;
 
@@ -2674,7 +2714,7 @@ function draw() {
 
                     const py = (player.y / net.state.room.height) * mapHeight + y + mapHeight / 2;
 
-                    ctx.fillStyle = blueDot;
+                    ctx.fillStyle = "#2F80FF";
                     ctx.beginPath();
                     ctx.arc(px, py, radius * 0.85, 0, Math.PI * 2);
                     ctx.fill();
@@ -2761,6 +2801,8 @@ function draw() {
             y += spacing + 15;
             x += 45;
         });
+        ctx.textAlign = "right";
+        text(`${net.state.alivePlayers.length}/${net.state.playerCount} Players`, x + 195, 145, barSize * 0.45, colors.white)
     }
 
     ctx.textAlign = "center";
@@ -3031,16 +3073,17 @@ function draw() {
 
             for (let i = net.ChatMessage.allMessages.length - 1; i >= 0; i--) {
                 const msg = net.ChatMessage.allMessages[i];
+                const color = chatColor(msg.color);
                 let msgHeight;
 
                 switch (msg.type) {
                     case 0: // Chat
-                        const nameWidth = text(msg.username, overlayX + 7, 50000, 14, msg.color);
+                        const nameWidth = text(msg.username, overlayX + 7, 50000, 14, color);
                         msgHeight = drawWrappedText(": " + msg.message, overlayX + 7 + nameWidth, 50000, 14, overlayWidth - 20 - nameWidth, "#FFFFFF", ctx, 73);
                         msgHeight = Math.max(msgHeight, 14);
                         break;
                     case 1: // System
-                        msgHeight = drawWrappedText(msg.message, overlayX + 7, 50000, 14, overlayWidth - 20, msg.color, ctx, 73);
+                        msgHeight = drawWrappedText(msg.message, overlayX + 7, 50000, 14, overlayWidth - 20, color, ctx, 73);
                         break;
                 }
 
@@ -3053,11 +3096,11 @@ function draw() {
 
                 switch (msg.type) {
                     case 0:
-                        const nameWidth2 = text(msg.username, overlayX + 7, y, 14, msg.color);
+                        const nameWidth2 = text(msg.username, overlayX + 7, y, 14, color);
                         drawWrappedText(": " + msg.message, overlayX + 7 + nameWidth2, y, 14, overlayWidth - 20 - nameWidth2, "#FFFFFF", ctx, 73);
                         break;
                     case 1:
-                        drawWrappedText(msg.message, overlayX + 7, y, 14, overlayWidth - 20, msg.color, ctx, 73);
+                        drawWrappedText(msg.message, overlayX + 7, y, 14, overlayWidth - 20, color, ctx, 73);
                         break;
                 }
             }
@@ -3076,6 +3119,7 @@ function draw() {
         if (!net.ChatMessage.showInput) {
             for (let i = messages.length - 1; i >= 0; i--) {
                 const message = messages[i];
+                const color = chatColor(message.color);
 
                 message.y = lerp(message.y, y, 0.2);
                 message.ticker++;
@@ -3087,11 +3131,11 @@ function draw() {
 
                 switch (message.type) {
                     case 0: // Chat
-                        const nameWidth = text(message.username, 66, message.y, 15, message.color);
+                        const nameWidth = text(message.username, 66, message.y, 15, color);
                         drawWrappedText(": " + message.message, nameWidth + 66, message.y, 15, 235, "#FFFFFF", ctx, 66);
                         break;
                     case 1: // System
-                        drawWrappedText(message.message, 66, message.y, 15, 235, message.color, ctx, 66);
+                        drawWrappedText(message.message, 66, message.y, 15, 235, color, ctx, 66);
                         break;
                 }
 

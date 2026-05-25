@@ -92,6 +92,7 @@ export const colors = {
     shrubGreen: "#0b7240",
     crabBodyOrange: "#dc704b",
     crabLimbBrown: "#4d2621",
+    // BIOMES
     defaultGray: "#718083",
     gardenGreen: "#1EA660",
     desertYellow: "#ECDCB8",
@@ -102,6 +103,46 @@ export const colors = {
     darkForestGreen: "#2C5037",
     halloweenOrange: "#CF5704"
 };
+export function rgbToHex(r, g, b) {
+    return (
+        "#" +
+        [r, g, b]
+            .map(v => v.toString(16).padStart(2, "0"))
+            .join("")
+    );
+}
+export function hexToRGB(h) {
+    h = h.replace("#", "");
+
+    return {
+        r: parseInt(h.substring(0, 2), 16),
+        g: parseInt(h.substring(2, 4), 16),
+        b: parseInt(h.substring(4, 6), 16)
+    };
+}
+export function chatGradient(speed, type, c1 = "#000000", c2 = "#ffffff") {
+    const a = performance.now() * speed + offset;
+    switch (type) {
+        case 0: {
+            const t = hexToRGB(c1);
+            const e = hexToRGB(c2);
+
+            const mix = (Math.sin(a) + 1) / 2;
+
+            const r = Math.round(t.r + (e.r - t.r) * mix);
+            const g = Math.round(t.g + (e.g - t.g) * mix);
+            const b = Math.round(t.b + (e.b - t.b) * mix);
+
+            return rgbToHex(r, g, b);
+        }
+        case 1: {
+            const hue = a % 360;
+            return `hsl(${hue}, 100%, 60%)`;
+        }
+        default:
+            return "#ffffff";
+    }
+}
 
 export function formatLargeNumber(number, type = 0) {
     let returnedNumber = number;

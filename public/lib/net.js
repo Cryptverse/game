@@ -986,7 +986,6 @@ export class ClientSocket extends WebSocket {
     }
 
     onMessage(event) {
-        state.pendingDropAmounts ??= new Map();
         const reader = new Reader(new DataView(new Uint8Array(event.data).buffer), 0, true);
         this._dataIn += event.data.byteLength;
 
@@ -1264,14 +1263,8 @@ export class ClientSocket extends WebSocket {
                         index: reader.getUint8(),
                         rarity: reader.getUint8(),
                         duration: reader.getUint16(),
-                        amount: 1,
+                        count: reader.getUint32(),
                     };
-
-                    const pending = state.pendingDropAmounts.get(id);
-                    if (pending !== undefined) {
-                        drop.amount = pending;
-                        state.pendingDropAmounts.delete(id);
-                    }
 
                     state.drops.set(id, drop);
                 }
@@ -1407,6 +1400,8 @@ export class ClientSocket extends WebSocket {
                     state.alivePlayers = alivePlayers;
                 }
 
+                state.playerCount = reader.getUint8();
+
                 state.level = reader.getUint16();
                 state.levelProgressTarget = reader.getFloat32();
 
@@ -1433,26 +1428,6 @@ export class ClientSocket extends WebSocket {
                     }
                 }
                 break;
-            case 250: {
-                const count = reader.getUint16();
-
-                for (let i = 0; i < count; i++) {
-                    const dropId = reader.getUint32();
-                    const amount = reader.getUint32();
-                    reader.getUint16();
-
-                    const drop = state.drops.get(dropId);
-
-                    if (!drop) {
-                        state.pendingDropAmounts.set(dropId, amount);
-                        continue;
-                    }
-
-                    drop.amount = amount;
-                }
-
-                break;
-            }
             case 110: {
                 if (!state.usesNewInventory) {
                     state.usesNewInventory = true;

@@ -1,7 +1,16 @@
+# Update (5/24/2026)
+- The leaderboard now shows how many players are in the lobby
+- Added some extra colors
+- Updated Sandstorm drawing
+- You can now add stacked drop amounts for every lobby
+- Some optimizations
+- You can now press H to see mob rarities
+- Added a secret chat feature..
+
 # Update (5/18/2026)
 - Added gradients for both Petal icons and Mob icons
-- Inventory can now be hovered
-- You can now view everyone in minimap in certain lobbies
+- Petals in the inventory can now show their stats
+- You can now view everyone in the minimap in certain lobbies
 
 # Update (5/9/2026)
 - Updated Pumpkin and Jack O' Lantern Drawings (Thanks to @Fubuki and @Dwajl)

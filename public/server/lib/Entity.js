@@ -2669,7 +2669,7 @@ export class Mob extends Entity {
 export class Drop {
     static idAccumulator = 1;
 
-    constructor(position = { x: 0, y: 0 }, client, i, r) {
+    constructor(position = { x: 0, y: 0 }, client, i, r, c = 1) {
         this.id = Drop.idAccumulator++;
         this.x = position.x;
         this.y = position.y;
@@ -2682,6 +2682,7 @@ export class Drop {
         this.index = i;
         this.rarity = r;
         this.duration = 20 * Math.pow(1.1, r);
+        this.count = c;
 
         this.creation = performance.now();
 
