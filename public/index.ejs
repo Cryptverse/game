@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
@@ -215,15 +215,15 @@
                 height: 20px;
             }
 
-      #bottomButtons {
-        display: flex;
-        flex-direction: column-reverse;
-        align-items: center;
-        gap: 5px;
-        background-color: rgba(0, 0, 0, 0.15);
-        border-radius: 5px;
-        padding: 5px;
-      }
+            #bottomButtons {
+                display: flex;
+                flex-direction: column-reverse;
+                align-items: center;
+                gap: 5px;
+                background-color: rgba(0, 0, 0, 0.15);
+                border-radius: 5px;
+                padding: 5px;
+            }
 
             #bottomButtons button {
                 width: 40px;
@@ -443,84 +443,145 @@
                 outline: none;
             }
         </style>
+        <script defer="defer" src="bundle.js"></script>
+        <script defer="defer" src="worker.js"></script>
+        <script defer="defer" src="mapEditor.js"></script>
     </head>
-
     <script type="module">
         document.addEventListener("DOMContentLoaded", () => {
             const redirect = window.location.href;
-            document.getElementById("discordLoginBtn").href = `<%= DISCORD_OAUTH2_REDIRECT_URL %>&state=${encodeURIComponent(JSON.stringify({ redirect }))}`;
+            document.getElementById("discordLoginBtn").href =
+                `https://discord.com/oauth2/authorize?client_id=1132362368979050546&response_type=code&redirect_uri=https%3A%2F%2Fsupercord.lol%2Fapi%2Flogin&scope=identify&state=${encodeURIComponent(JSON.stringify({ redirect }))}`;
         });
     </script>
-
     <body oncontextmenu="return false;">
         <canvas></canvas>
-
         <div id="menuContainer">
             <div id="topButtons">
-                <button id="optionsMenu" tabindex="-1"></button>
-                <button id="accountMenu" tabindex="-1"></button>
+                <button id="optionsMenu" tabindex="-1"></button> <button id="accountMenu" tabindex="-1"></button>
                 <button id="changelogMenu" tabindex="-1" style="position: relative"></button>
-                <button id="discordButton" tabindex="-1"></button>
-
-                <button id="closeButton" class="inactive"></button>
+                <button id="discordButton" tabindex="-1"></button> <button id="closeButton" class="inactive"></button>
             </div>
-
             <div id="menus">
-                <div class="menu" id="optionsMenu" style="height: 460px">
+                <div class="menu" id="optionsMenu" style="height: 480px">
                     <h2>Options:</h2>
-
                     <label for="show-debug">Show Debug Info:</label>
-                    <input type="checkbox" id="show-debug" name="show-debug" value="show-debug" /><br />
-
-                    <label for="hide-grid">Hide Grid:</label>
-                    <input type="checkbox" id="hide-grid" name="hide-grid" value="hide-grid" /><br />
-
-                    <label for="rigid-interpolation">Rigid Interpolation:</label>
-                    <input type="checkbox" id="rigid-interpolation" name="rigid-interpolation" value="rigid-interpolation" /><br />
-
-                    <label for="mouse-movement">Mouse Movement:</label>
-                    <input type="checkbox" id="mouse-movement" name="mouse-movement" value="mouse-movement" /><br />
-
-                    <label for="hide-entity-ui">Hide Entity UI:</label>
-                    <input type="checkbox" id="hide-entity-ui" name="hide-entity-ui" value="hide-entity-ui" /><br />
-
-                    <label for="disable-tiled-background">Disable Tiled Background:</label>
-                    <input type="checkbox" id="disable-tiled-background" name="disable-tiled-background" value="disable-tiled-background" /><br />
-
-                    <label for="extra-graphics">Fancy Graphics:</label>
-                    <input type="checkbox" id="extra-graphics" name="extra-graphics" value="extra-graphics" /><br />
-
-                    <label for="disable-gradients">Disable Gradients:</label>
-                    <input type="checkbox" id="disable-gradients" name="disable-gradients" value="disable-gradients" /><br />
-
-                    <label for="minimum-gradient-rarity">Minimum Gradient Rarity:</label>
-                    <input type="number" id="minimum-gradient-rarity" name="minimum-gradient-rarity" min="0" step="1" value="0" /><br />
-
-                    <label for="show-hitboxes">Show Hitboxes:</label>
-                    <input type="checkbox" id="show-hitboxes" name="show-hitboxes" value="show-hitboxes" /><br />
-
-                    <label for="cache-mob-assets">Cache Mob Assets:</label>
-                    <input type="checkbox" id="cache-mob-assets" name="cache-mob-assets" value="cache-mob-assets" /><br />
-
-                    <label for="cache-petal-assets">Cache Petal Assets:</label>
-                    <input type="checkbox" id="cache-petal-assets" name="cache-petal-assets" value="cache-petal-assets" /><br />
+                    <input type="checkbox" id="show-debug" name="show-debug" value="show-debug" /><br /><label
+                        for="hide-grid"
+                        >Hide Grid:</label
+                    >
+                    <input type="checkbox" id="hide-grid" name="hide-grid" value="hide-grid" /><br /><label
+                        for="rigid-interpolation"
+                        >Rigid Interpolation:</label
+                    >
+                    <input
+                        type="checkbox"
+                        id="rigid-interpolation"
+                        name="rigid-interpolation"
+                        value="rigid-interpolation"
+                    /><br /><label for="mouse-movement">Mouse Movement:</label>
+                    <input
+                        type="checkbox"
+                        id="mouse-movement"
+                        name="mouse-movement"
+                        value="mouse-movement"
+                    /><br /><label for="hide-entity-ui">Hide Entity UI:</label>
+                    <input
+                        type="checkbox"
+                        id="hide-entity-ui"
+                        name="hide-entity-ui"
+                        value="hide-entity-ui"
+                    /><br /><label for="show-damage">Show Damage Numbers:</label>
+                    <input type="checkbox" id="show-damage" name="show-damage" value="show-damage" /><br /><label
+                        for="disable-tiled-background"
+                        >Disable Tiled Background:</label
+                    >
+                    <input
+                        type="checkbox"
+                        id="disable-tiled-background"
+                        name="disable-tiled-background"
+                        value="disable-tiled-background"
+                    /><br /><label for="extra-graphics">Fancy Graphics:</label>
+                    <input
+                        type="checkbox"
+                        id="extra-graphics"
+                        name="extra-graphics"
+                        value="extra-graphics"
+                    /><br /><label for="disable-gradients">Disable Gradients:</label>
+                    <input
+                        type="checkbox"
+                        id="disable-gradients"
+                        name="disable-gradients"
+                        value="disable-gradients"
+                    /><br /><label for="minimum-gradient-rarity">Minimum Gradient Rarity:</label>
+                    <input
+                        type="number"
+                        id="minimum-gradient-rarity"
+                        name="minimum-gradient-rarity"
+                        min="0"
+                        step="1"
+                        value="0"
+                    /><br /><label for="show-hitboxes">Show Hitboxes:</label>
+                    <input type="checkbox" id="show-hitboxes" name="show-hitboxes" value="show-hitboxes" /><br /><label
+                        for="cache-mob-assets"
+                        >Cache Mob Assets:</label
+                    >
+                    <input
+                        type="checkbox"
+                        id="cache-mob-assets"
+                        name="cache-mob-assets"
+                        value="cache-mob-assets"
+                    /><br /><label for="cache-petal-assets">Cache Petal Assets:</label>
+                    <input
+                        type="checkbox"
+                        id="cache-petal-assets"
+                        name="cache-petal-assets"
+                        value="cache-petal-assets"
+                    /><br />
                 </div>
-
                 <div class="menu" id="accountMenu" style="height: 38vmin">
-                    <!-- Logged In -->
                     <div id="accountLoggedIn" style="display: none; padding: 2vmin; text-align: center">
-                        <img id="accountAvatar" src="" width="128" height="128" style="border-radius: 50%; margin-bottom: 1.5vmin; image-rendering: -webkit-optimize-contrast" />
-
-                        <div id="accountUsernameDisplay" style="font-size: 3.2vmin; font-weight: bold; margin-bottom: 2.5vmin; white-space: nowrap">Loading...</div>
-
-                        <button id="logoutButton" style="background: #ed4245; color: white; border: none; padding: 1.4vmin 4vmin; border-radius: 2px solid #c13537; border-radius: 1vmin; font-weight: bold; font-size: 2.2vmin; cursor: pointer; width: 80%">Log Out</button>
+                        <img
+                            id="accountAvatar"
+                            src=""
+                            width="128"
+                            height="128"
+                            style="
+                                border-radius: 50%;
+                                margin-bottom: 1.5vmin;
+                                image-rendering: -webkit-optimize-contrast;
+                            "
+                        />
+                        <div
+                            id="accountUsernameDisplay"
+                            style="font-size: 3.2vmin; font-weight: bold; margin-bottom: 2.5vmin; white-space: nowrap"
+                        >
+                            Loading...
+                        </div>
+                        <button
+                            id="logoutButton"
+                            style="
+                                background: #ed4245;
+                                color: white;
+                                border: none;
+                                padding: 1.4vmin 4vmin;
+                                border-radius: 2px solid #c13537;
+                                border-radius: 1vmin;
+                                font-weight: bold;
+                                font-size: 2.2vmin;
+                                cursor: pointer;
+                                width: 80%;
+                            "
+                        >
+                            Log Out
+                        </button>
                     </div>
-
-                    <!-- Logged Out -->
                     <div id="accountLoggedOut" style="text-align: center; padding: 4vmin 2vmin">
-                        <!-- <div style="color: #888; margin-bottom: 3vmin; font-size: 2.2vmin">Sign in to save progress</div> -->
+                        <div style="color: #888; margin-bottom: 3vmin; font-size: 2.2vmin">
+                            Sign in to save progress
+                        </div>
                         <a
-                            href="<%= DISCORD_OAUTH2_REDIRECT_URL %>"
+                            href="https://discord.com/oauth2/authorize?client_id=1132362368979050546&response_type=code&redirect_uri=https%3A%2F%2Fsupercord.lol%2Fapi%2Flogin&scope=identify"
                             id="discordLoginBtn"
                             style="
                                 display: inline-flex;
@@ -536,45 +597,39 @@
                                 font-size: 2.2vmin;
                                 box-shadow: 0 6px 16px rgba(88, 101, 242, 0.4);
                             "
+                            ><img
+                                src="/assets/Discord-Symbol-Black.png"
+                                width="32"
+                                height="32"
+                                style="object-fit: contain"
+                            />
+                            <span>Log in with Discord</span></a
                         >
-                            <img src="/assets/Discord-Symbol-Black.png" width="32" height="32" style="object-fit: contain" />
-                            <span>Log in with Discord</span>
-                        </a>
                     </div>
                 </div>
-
-                <div class="menu" id="changelogMenu" style="width: 42vmin">
-                    <h2>Changelogs:</h2>
-                </div>
+                <div class="menu" id="changelogMenu" style="width: 42vmin"><h2>Changelogs:</h2></div>
             </div>
         </div>
-
         <div id="buttonsContainer">
-            <div id="bottomButtons">
-                <button id="inventory" tabindex="-1"></button>
-            </div>
-
+            <div id="bottomButtons"><button id="inventory" tabindex="-1"></button></div>
             <div id="menus2">
-                <div class="menu" id="inventory">
-                    <span>Your inventory is empty :(</span>
-                </div>
+                <div class="menu" id="inventory"><span>Your inventory is empty :(</span></div>
             </div>
         </div>
-
         <div class="preMenu active" id="mainMenu">
             <h1>floof beta</h1>
             <button data-switchmenu="createLobby" tabindex="-1">Create Lobby</button>
             <button data-switchmenu="findLobbies" tabindex="-1">Find Lobbies</button>
         </div>
-
         <div class="preMenu" id="createLobby">
             <h1>Create Lobby</h1>
-            <input type="text" placeholder="Lobby Name" id="lobbyName" />
+            <input placeholder="Lobby Name" id="lobbyName" />
             <button id="createLobbyButton" tabindex="-1">Create</button>
-            <button data-switchmenu="mainMenu" tabindex="-1">Back</button><br />
-            <label for="gamemodeSelect">Gamemode</label>
+            <button data-switchmenu="mainMenu" tabindex="-1">Back</button><br /><label for="gamemodeSelect"
+                >Gamemode</label
+            >
             <select id="gamemodeSelect">
-                <option value="ffa" selected>FFA</option>
+                <option value="ffa" selected="selected">FFA</option>
                 <option value="tdm">TDM</option>
                 <option value="waves">Waves</option>
                 <option value="line">Line</option>
@@ -582,7 +637,7 @@
             </select>
             <label for="biomeSelect">Biome</label>
             <select id="biomeSelect">
-                <option value="default" selected>All Mobs</option>
+                <option value="default" selected="selected">All Mobs</option>
                 <option value="garden">Garden</option>
                 <option value="desert">Desert</option>
                 <option value="ocean">Ocean</option>
@@ -590,29 +645,23 @@
                 <option value="sewers">Sewers</option>
                 <option value="hell">Hell</option>
                 <option value="dark_forest">Dark Forest</option></select
-            ><br />
-            <label for="enableMods">Enable Mods</label>
-            <input type="checkbox" id="enableMods" />
-            <label for="privateLobby">Private</label>
-            <input type="checkbox" id="privateLobby" />
+            ><br /><label for="enableMods">Enable Mods</label> <input type="checkbox" id="enableMods" />
+            <label for="privateLobby">Private</label> <input type="checkbox" id="privateLobby" />
         </div>
-
         <div class="preMenu" id="findLobbies">
             <h1>Find Lobbies</h1>
             <button data-switchmenu="mainMenu" tabindex="-1">Back</button>
             <button id="refreshLobbies" tabindex="-1">Refresh</button>
             <div id="lobbiesDisplay"></div>
         </div>
-
         <div class="preMenu" id="usernameInput">
             <h1>Enter Username</h1>
-            <input type="text" placeholder="Username" id="usernameInputInput" />
+            <input placeholder="Username" id="usernameInputInput" />
             <button id="usernameButton" tabindex="-1">Enter</button>
         </div>
-
-        <input type="text" maxlength="128" id="chatInput" placeholder="Enter to chat; Esc to close" />
+        <input maxlength="128" id="chatInput" placeholder="Enter to chat; Esc to close" />
         <script type="module">
-            const AUTH_SERVER = "<%= AUTH_SERVER %>".replace(/\/+$/, "");
+            const AUTH_SERVER = "https://supercord.lol".replace(/\/+$/, "");
 
             async function updateAccountMenu() {
                 const loggedIn = document.getElementById("accountLoggedIn");

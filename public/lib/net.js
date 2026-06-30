@@ -631,6 +631,7 @@ export class ClientEntity {
 }
 
 export class ClientPlayer extends ClientEntity {
+    static ESTIMATED_MAX_HEALTH = 100;
     constructor(id) {
         super(id);
         this.name = "";
@@ -779,6 +780,74 @@ export class ClientLightning {
     get alpha() {
         const n = performance.now();
         return n - this.tick > ClientLightning.TIME_ALIVE ? 0 : 1 - (n - this.tick) / ClientLightning.TIME_ALIVE;
+    }
+}
+
+function spawnFloatingDamage(entityId, amount, worldX, worldY, isPoison) {
+    if (!(amount > 0)) return;
+    let entry = state.floatingTexts.get(entityId);
+    if (!entry) {
+        entry = { damages: {}, heal: null };
+        state.floatingTexts.set(entityId, entry);
+    }
+    const type = isPoison ? "poison" : "normal";
+    const color = isPoison ? util.colors.irisPurple : util.colors.legendary;
+    const now = performance.now();
+    let dmg = entry.damages[type];
+    if (dmg && now - dmg.startTime < 1000) {
+        dmg.value += amount;
+        dmg.lastHitTime = now;
+        dmg.worldX = worldX;
+        dmg.worldY = worldY;
+    } else {
+        entry.damages[type] = { value: amount, color, startTime: now, lastHitTime: now, worldX, worldY };
+    }
+}
+
+function spawnFloatingHeal(entityId, amount, worldX, worldY) {
+    if (!(amount > 0)) return;
+    let entry = state.floatingTexts.get(entityId);
+    if (!entry) {
+        entry = { damages: {}, heal: null };
+        state.floatingTexts.set(entityId, entry);
+    }
+    const now = performance.now();
+    if (entry.heal && now - entry.heal.startTime < 1000) {
+        entry.heal.value += amount;
+        entry.heal.lastHitTime = now;
+    } else {
+        entry.heal = { value: amount, startTime: now, lastHitTime: now, worldX, worldY };
+    }
+    entry.heal.worldX = worldX;
+    entry.heal.worldY = worldY;
+}
+
+function handleHealthChange(entityId, oldRatio, newRatio, worldX, worldY, isPoison, maxHealth) {
+    if (!util.options.showDamageNumbers) return;
+    const deltaRatio = newRatio - oldRatio;
+    if (Math.abs(deltaRatio) < (isPoison ? 0.00001 : 0.0005)) return;
+    const effectiveMax = maxHealth ?? ClientPlayer.ESTIMATED_MAX_HEALTH;
+    const amount = Math.max(1, Math.round(Math.abs(deltaRatio) * effectiveMax));
+    if (deltaRatio < 0) {
+        handleHealthChange._ps = handleHealthChange._ps || new Map();
+        let st = handleHealthChange._ps.get(entityId);
+        if (!st) { st = { wasPoisoned: false, tickAmount: 0 }; handleHealthChange._ps.set(entityId, st); }
+        let isNormal = false, isPoisonTick = false;
+        if (isPoison && st.wasPoisoned) {
+            if (st.tickAmount > 0 && amount > st.tickAmount * 1.5) {
+                isNormal = true;
+            } else {
+                st.tickAmount = amount;
+                isPoisonTick = true;
+            }
+        } else {
+            isNormal = true;
+        }
+        st.wasPoisoned = isPoison;
+        if (isNormal) spawnFloatingDamage(entityId, amount, worldX, worldY, false);
+        if (isPoisonTick) spawnFloatingDamage(entityId, amount, worldX, worldY, true);
+    } else {
+        spawnFloatingHeal(entityId, amount, worldX, worldY);
     }
 }
 
@@ -1192,8 +1261,10 @@ export class ClientSocket extends WebSocket {
                     }
 
                     if (flags & ENTITY_FLAGS.HEALTH) {
+                        const oldHealthRatio = player.realHealthRatio;
                         player.realHealthRatio = reader.getUint8() / 255;
                         player.realShieldRatio = reader.getUint8() / 255;
+                        handleHealthChange(player.id, oldHealthRatio, player.realHealthRatio, player.x, player.y, player.poisoned, null);
                     }
 
                     if (flags & ENTITY_FLAGS.DISPLAY) {
@@ -1331,7 +1402,10 @@ export class ClientSocket extends WebSocket {
                     }
 
                     if (flags & ENTITY_FLAGS.HEALTH) {
+                        const oldHealthRatio = mob.realHealthRatio;
                         mob.realHealthRatio = reader.getUint8() / 255;
+                        const mobMaxHealth = state.mobConfigs[mob.index]?.tiers[mob.rarity]?.health ?? null;
+                        handleHealthChange(mob.id, oldHealthRatio, mob.realHealthRatio, mob.x, mob.y, mob.poisoned, mobMaxHealth);
                     }
 
                     if (flags & ENTITY_FLAGS.ROPE_BODIES) {
@@ -1418,9 +1492,30 @@ export class ClientSocket extends WebSocket {
                         });
                     }
 
+                    const _lOrigPts = lightning.points.slice();
                     lightning.improvePoints();
 
                     state.lightning.set(id, lightning);
+                    (function() {
+                        const now = performance.now();
+                        for (let pi = 1; pi < _lOrigPts.length; pi++) {
+                            const pt = _lOrigPts[pi];
+                            state.floatingTexts.forEach((entry, eid) => {
+                                if (entry.damages && entry.damages.normal && now - entry.damages.normal.lastHitTime < 300) {
+                                    const ent = state.players.get(eid) || state.mobs.get(eid);
+                                    if (ent) {
+                                        const dx = ent.x - pt.x;
+                                        const dy = ent.y - pt.y;
+                                        if (dx * dx + dy * dy < 40000) {
+                                            entry.damages.lightning = entry.damages.normal;
+                                            entry.damages.lightning.color = "#00FFFF";
+                                            delete entry.damages.normal;
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    })();
                 }
 
                 {
@@ -2067,6 +2162,8 @@ export const state = {
 
     /** @type {Map<number, ClientLightning>} */
     lightning: new Map(),
+
+    floatingTexts: new Map(),
 
     /** @type {ClientSocket|null} */
     socket: null,

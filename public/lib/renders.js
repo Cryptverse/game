@@ -1,6 +1,6 @@
 import { state } from "./net.js";
 import { ctx as _ctx, drawWrappedText, mixColors, roundedRectangle, text } from "./canvas.js";
-import { formatLargeNumber, colors, options } from "./util.js";
+import { formatLargeNumber, formatDamageNumber, colors, options } from "./util.js";
 import { Drawing, PetalConfig } from "./protocol.js";
 
 const TAU = Math.PI * 2;
@@ -5936,3 +5936,61 @@ export const pentagram = (() => {
         ctx.stroke();
     };
 })();
+
+export function renderFloatingTexts(scale, cameraX, cameraY, halfWidth, halfHeight) {
+    if (!options.showDamageNumbers) return;
+    const now = performance.now();
+    _ctx.textAlign = "center";
+
+    state.floatingTexts.forEach((entry, entityId) => {
+        if (!entry.damages) entry.damages = {};
+        const types = ["normal", "poison", "lightning"];
+        for (let ti = 0; ti < types.length; ti++) {
+            const dmg = entry.damages[types[ti]];
+            if (!dmg) continue;
+            const elapsed = now - dmg.lastHitTime;
+            if (elapsed >= 580) {
+                delete entry.damages[types[ti]];
+                continue;
+            }
+            const t = elapsed / 580;
+            const drawX = dmg.worldX * scale - cameraX + halfWidth;
+            const drawY = dmg.worldY * scale - cameraY + halfHeight;
+            const jumpT = Math.min(t / 0.25, 1);
+            const jumpHeight = 16 * scale;
+            const jumpY = -jumpHeight * (1 - Math.pow(1 - jumpT, 2));
+            const fallDistance = 28 * scale;
+            const fallY = fallDistance * t * t;
+            const yOffset = jumpY + fallY + (ti * -18 * scale);
+            const alpha = 1 - t;
+            const oldGA = _ctx.globalAlpha;
+            _ctx.globalAlpha = alpha;
+            text(formatDamageNumber(dmg.value), drawX, drawY + yOffset, 13 * scale, dmg.color);
+            _ctx.globalAlpha = oldGA;
+        }
+
+        if (entry.heal) {
+            const elapsed = now - entry.heal.lastHitTime;
+            if (elapsed >= 580) {
+                entry.heal = null;
+            } else {
+                const t = elapsed / 580;
+                const drawX = entry.heal.worldX * scale - cameraX + halfWidth;
+                const drawY = entry.heal.worldY * scale - cameraY + halfHeight;
+                const riseDistance = 24 * scale;
+                const yOffset = -riseDistance * t;
+                const alpha = 1 - t;
+                const oldGA = _ctx.globalAlpha;
+                _ctx.globalAlpha = alpha;
+                text(formatDamageNumber(entry.heal.value), drawX, drawY + yOffset, 13 * scale, colors.rosePink);
+                _ctx.globalAlpha = oldGA;
+            }
+        }
+
+        if (Object.keys(entry.damages).length === 0 && !entry.heal) {
+            state.floatingTexts.delete(entityId);
+        }
+    });
+
+    _ctx.globalAlpha = 1;
+}

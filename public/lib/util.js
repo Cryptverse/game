@@ -123,6 +123,15 @@ export function formatLargeNumber(number, type = 0) {
     return returnedNumber;
 }
 
+export function formatDamageNumber(value) {
+    const v = Math.round(value);
+    if (v < 1e3) return "" + v;
+    if (v < 1e6) return parseFloat((v / 1e3).toFixed(1)) + "k";
+    if (v < 1e9) return parseFloat((v / 1e6).toFixed(1)) + "m";
+    if (v < 1e12) return parseFloat((v / 1e9).toFixed(1)) + "b";
+    return parseFloat((v / 1e12).toFixed(1)) + "t";
+}
+
 const threshold = .6375;
 
 export function getDropRarity(mobRarity, highestPlayerRarity) {
@@ -206,6 +215,7 @@ export const options = {
     rigidInterpolation: false,
     mouseMovement: false,
     hideEntityUI: false,
+    showDamageNumbers: false,
     useTileBackground: false,
     fancyGraphics: false,
     showHitboxes: false,
